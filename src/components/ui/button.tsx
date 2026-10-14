@@ -1,7 +1,8 @@
 import React from "react";
 import Link from "next/link";
+import SpecularButton from "./specular-button";
 
-export type ButtonVariant = "primary" | "secondary" | "ghost" | "icon-glass" | "cta";
+export type ButtonVariant = "primary" | "secondary" | "ghost" | "icon-glass" | "cta" | "specular";
 export type ButtonSize = "sm" | "md" | "lg";
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -12,6 +13,9 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   iconPosition?: "left" | "right";
   href?: string;
   as?: React.ElementType;
+  tint?: string;
+  glow?: number;
+  intensity?: number;
 }
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
@@ -20,6 +24,7 @@ const VARIANT_CLASSES: Record<ButtonVariant, string> = {
   ghost: "btn--ghost",
   "icon-glass": "btn--icon-glass",
   cta: "btn--primary btn--cta",
+  specular: "btn--specular",
 };
 
 const SIZE_CLASSES: Record<ButtonSize, string> = {
@@ -40,11 +45,43 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       href,
       className = "",
       children,
+      tint,
+      glow,
+      intensity,
+      type = "button",
       ...props
     },
     ref
   ) => {
-    const variantClass = VARIANT_CLASSES[variant] || VARIANT_CLASSES.primary;
+    // For primary and cta, render the glassy opaque SpecularButton with dynamic specular edge
+    if (variant === "primary" || variant === "cta" || variant === "specular") {
+      return (
+        <SpecularButton
+          ref={ref as unknown as React.ForwardedRef<HTMLButtonElement & HTMLAnchorElement>}
+          size={size}
+          href={href}
+          loading={loading}
+          disabled={disabled}
+          icon={icon}
+          iconPosition={iconPosition}
+          className={className}
+          tint={tint || "#ffffff"}
+          tintOpacity={0.08}
+          blur={16}
+          textColor="#f5f5f5"
+          lineColor="#ffffff"
+          baseColor="rgba(255, 255, 255, 0.22)"
+          glow={glow ?? 1}
+          intensity={intensity ?? 1}
+          type={type as "button" | "submit" | "reset"}
+          {...props}
+        >
+          {children}
+        </SpecularButton>
+      );
+    }
+
+    const variantClass = VARIANT_CLASSES[variant] || VARIANT_CLASSES.secondary;
     const sizeClass = variant === "icon-glass" ? "" : SIZE_CLASSES[size];
     const isDisabled = disabled || loading;
 
@@ -102,6 +139,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <button
         ref={ref}
+        type={type}
         disabled={isDisabled}
         className={`btn ${variantClass} ${sizeClass} ${className}`}
         {...props}

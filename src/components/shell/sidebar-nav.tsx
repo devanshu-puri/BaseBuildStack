@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Chip } from "@/components/ui/chip";
+import SpecularButton from "@/components/ui/specular-button";
 
 const primaryNav = [
   {
@@ -126,12 +127,14 @@ export function SidebarNav() {
           <p className="text-[11px] text-[#B4B8CC] leading-snug">
             Adaptive weak-area quizzes &amp; repo analysis.
           </p>
-          <button
-            type="button"
-            className="w-full mt-1 py-1.5 px-3 rounded-full bg-white/15 hover:bg-white/25 border border-white/25 text-white font-mono text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer shadow-sm text-center"
+          <SpecularButton
+            size="sm"
+            radius={9999}
+            className="w-full mt-1.5 font-mono text-[11px] font-bold uppercase tracking-wider shadow-md"
+            href="/settings"
           >
             Upgrade Plan ↗
-          </button>
+          </SpecularButton>
         </div>
 
         {/* Settings link */}
