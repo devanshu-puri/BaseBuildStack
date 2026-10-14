@@ -4,6 +4,9 @@ import React from "react";
 import Link from "next/link";
 import { Chip } from "@/components/ui/chip";
 import { Button } from "@/components/ui/button";
+import ReflectiveCard from "@/components/ui/reflective-card";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { CheckmarkBadge01Icon, FingerPrintIcon } from "@hugeicons/core-free-icons";
 
 interface DsaMode {
   id: string;
@@ -21,6 +24,11 @@ interface DsaMode {
   imageSrc: string;
   badge: string;
   quote: string;
+  idLabel: string;
+  idValue: string;
+  status: string;
+  statusColor: string;
+  tint: string;
 }
 
 const MODES: DsaMode[] = [
@@ -40,6 +48,11 @@ const MODES: DsaMode[] = [
     imageSrc: "/images/dsa-blitz.jpg",
     badge: "⚡ 45s Timed Blitz",
     quote: "Master the invariants. Recognize the pattern in 45s.",
+    idLabel: "Canonical Deck",
+    idValue: "BLTZ-0061-SRS",
+    status: "SRS Active",
+    statusColor: "#2BB7FF",
+    tint: "#7bd4ff",
   },
   {
     id: "bug-audit",
@@ -57,6 +70,11 @@ const MODES: DsaMode[] = [
     imageSrc: "/images/dsa-audit.jpg",
     badge: "🔍 Precision Code Audit",
     quote: "Zero flaws. Spot the breaking line in worker sandbox.",
+    idLabel: "Runtime sandbox",
+    idValue: "VM-ISOLATED-01",
+    status: "Watchdog ON",
+    statusColor: "#FF7647",
+    tint: "#ffaa80",
   },
   {
     id: "open-ended",
@@ -74,6 +92,11 @@ const MODES: DsaMode[] = [
     imageSrc: "/images/dsa-arch.jpg",
     badge: "🏗️ System Architecture",
     quote: "Architect distributed scale. Defend every trade-off.",
+    idLabel: "Evaluation",
+    idValue: "RUBRIC-TREE-AI",
+    status: "3-Phase Ready",
+    statusColor: "#A855F7",
+    tint: "#d49aff",
   },
 ];
 
@@ -81,7 +104,7 @@ export default function DsaHubPage() {
   return (
     <div className="space-y-10 max-w-7xl mx-auto py-2">
       {/* -------------------------------------------------------------------- */}
-      {/* 1. Header Bar with Prominent Streak Badge (No Congested Sidebar)    */}
+      {/* 1. Header Bar with Prominent Streak Badge                            */}
       {/* -------------------------------------------------------------------- */}
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-[var(--border)]">
         <div className="space-y-3 max-w-3xl">
@@ -118,149 +141,141 @@ export default function DsaHubPage() {
       </header>
 
       {/* -------------------------------------------------------------------- */}
-      {/* 2. Three Bespoke 3D Glassy Sculpted Cards (Image 3 Reference Design) */}
+      {/* 2. Three ReflectiveCard Components from React Bits                   */}
       {/* -------------------------------------------------------------------- */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch pt-2">
         {MODES.map((mode) => (
-          <div
-            key={mode.id}
-            className="relative flex flex-col justify-between group transition-all duration-300 hover:-translate-y-1.5"
-            style={{ minHeight: "560px" }}
-          >
-            {/* Sculpted Silhouette SVG Background with Asymmetric Tabs */}
-            <svg
-              viewBox="0 0 360 560"
-              preserveAspectRatio="none"
-              className="absolute inset-0 w-full h-full pointer-events-none drop-shadow-[0_20px_48px_rgba(0,0,0,0.7)] transition-all duration-300"
-              aria-hidden="true"
+          <div key={mode.id} className="flex justify-center">
+            <ReflectiveCard
+              width="100%"
+              height={670}
+              radius={24}
+              tint={mode.tint}
+              glowColor={mode.glowColor}
+              metalness={0.72}
+              roughness={0.34}
+              blurStrength={8}
+              shine={0.8}
+              glare={0.42}
+              bevel={3}
+              tiltStrength={10}
+              theme="dark"
+              statusColor={mode.statusColor}
+              className="w-full transition-all duration-300"
             >
-              <defs>
-                <linearGradient
-                  id={`border-grad-${mode.id}`}
-                  x1="0%"
-                  y1="0%"
-                  x2="100%"
-                  y2="100%"
-                >
-                  <stop offset="0%" stopColor={mode.accentHex} stopOpacity="0.5" />
-                  <stop offset="50%" stopColor="rgba(255,255,255,0.12)" />
-                  <stop offset="100%" stopColor={mode.accentHex} stopOpacity="0.25" />
-                </linearGradient>
-              </defs>
+              <div className="flex flex-col justify-between h-full space-y-4">
+                {/* Header: Badge & Status */}
+                <div className="flex items-center justify-between gap-3 text-xs">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-[11px] font-mono font-bold text-white shadow-sm">
+                    <HugeiconsIcon
+                      icon={CheckmarkBadge01Icon}
+                      size={14}
+                      strokeWidth={2}
+                      style={{ color: mode.accentHex }}
+                    />
+                    <span>{mode.badge}</span>
+                  </span>
 
-              <path
-                d="M 0,56 A 28,28 0 0,1 28,28 L 160,28 C 180,28 190,0 210,0 L 332,0 A 28,28 0 0,1 360,28 L 360,504 A 28,28 0 0,1 332,532 L 150,532 C 130,532 120,560 100,560 L 28,560 A 28,28 0 0,1 0,532 Z"
-                fill="#0d0f14"
-                stroke={`url(#border-grad-${mode.id})`}
-                strokeWidth="1.5"
-                vectorEffect="non-scaling-stroke"
-                className="group-hover:stroke-white/40 transition-colors duration-300"
-              />
-            </svg>
-
-            {/* Top-Right Raised Sculpted Tab Label (e.g., "— Speed Runner®") */}
-            <div className="absolute top-2 right-6 z-10 font-mono text-[11px] font-bold tracking-wider text-white/70 uppercase select-none">
-              {mode.tabLabel}
-            </div>
-
-            {/* Bottom-Left Extended Tab Indicator Dots (e.g. ● ○ ○) */}
-            <div className="absolute bottom-3 left-6 z-10 flex items-center gap-1.5 select-none">
-              <span
-                className="w-2.5 h-2.5 rounded-full"
-                style={{
-                  backgroundColor: mode.accentHex,
-                  boxShadow: `0 0 10px ${mode.accentHex}`,
-                }}
-              />
-              <span className="w-2 h-2 rounded-full bg-white/20" />
-              <span className="w-2 h-2 rounded-full bg-white/20" />
-            </div>
-
-            {/* Card Content Container */}
-            <div className="relative z-10 flex flex-col justify-between h-full pt-10 pb-12 px-5 sm:px-6 space-y-5">
-              {/* Top Media: 3D Glassy Sculptural Artwork Tile */}
-              <div className="relative rounded-2xl overflow-hidden aspect-[16/10] border border-white/10 shadow-2xl group/media bg-black">
-                {/* 3D Glass Artwork Image */}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={mode.imageSrc}
-                  alt={mode.title}
-                  className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 ease-out"
-                />
-
-                {/* Ambient Scrim & Vignette */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-transparent pointer-events-none" />
-
-                {/* Top-Left 3D Glassy Badge */}
-                <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/20 flex items-center gap-2 text-xs font-mono font-bold text-white shadow-lg">
-                  <span
-                    className="w-2 h-2 rounded-full animate-pulse"
-                    style={{
-                      backgroundColor: mode.accentHex,
-                      boxShadow: `0 0 8px ${mode.accentHex}`,
-                    }}
-                  />
-                  <span>{mode.badge}</span>
+                  <span className="inline-flex items-center gap-1.5 text-[11px] font-mono font-medium text-white/70">
+                    <span
+                      className="w-2 h-2 rounded-full animate-pulse"
+                      style={{
+                        backgroundColor: mode.statusColor,
+                        boxShadow: `0 0 10px ${mode.statusColor}`,
+                      }}
+                    />
+                    <span>{mode.status}</span>
+                  </span>
                 </div>
 
-                {/* Bold Statement Overlay Quote at Bottom of Media Tile (Matching Image 3) */}
-                <p className="absolute bottom-3 left-3.5 right-3.5 text-xs sm:text-sm font-bold text-white leading-snug drop-shadow-md">
-                  {mode.quote}
-                </p>
-              </div>
+                {/* 3D Glass Artwork Tile with Ambient Gradient & Quote */}
+                <div className="relative rounded-2xl overflow-hidden aspect-[16/10] border border-white/15 shadow-2xl bg-black/80 group/media">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={mode.imageSrc}
+                    alt={mode.title}
+                    className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 ease-out"
+                  />
 
-              {/* Middle Section: Hero Typography + Title & Description */}
-              <div className="space-y-3 flex-1 flex flex-col justify-between">
-                <div>
-                  {/* Hero Word in font-display (Matching Image 3: "Let's Talk.", "+190%", "One Call.") */}
-                  <div
-                    className="font-display text-3xl sm:text-4xl font-black text-white tracking-tight"
-                    style={{
-                      textShadow: `0 0 24px ${mode.glowColor}`,
-                    }}
-                  >
-                    {mode.heroWord}
-                  </div>
+                  {/* Vignette / Scrim */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent pointer-events-none" />
 
-                  {/* Title & Description */}
-                  <h3 className="font-display text-lg font-bold text-white mt-1 group-hover:text-[var(--accent-bright)] transition-colors">
-                    {mode.title}
-                  </h3>
+                  {/* Mode Label Tag on top right */}
+                  <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-md border border-white/10 text-[10px] font-mono font-bold text-white/80">
+                    {mode.tabLabel}
+                  </span>
 
-                  <p className="font-ui text-xs text-[var(--text-2)] mt-1 leading-relaxed">
-                    {mode.desc}
+                  {/* Bold Statement Overlay Quote */}
+                  <p className="absolute bottom-2.5 left-3 right-3 text-xs sm:text-sm font-bold text-white leading-snug drop-shadow-md">
+                    {mode.quote}
                   </p>
                 </div>
 
-                {/* Feature Chips */}
-                <div className="flex items-center gap-1.5 flex-wrap pt-2">
-                  {mode.chips.map((chip) => (
-                    <Chip
-                      key={chip}
-                      v={chip}
-                      tone="default"
-                      className="text-[10px] font-mono py-0.5"
-                    />
-                  ))}
+                {/* Middle Section: Hero Word + Title + Description + Chips */}
+                <div className="space-y-2 flex-1 flex flex-col justify-between">
+                  <div>
+                    <div
+                      className="font-display text-2xl sm:text-3xl font-black text-white tracking-tight"
+                      style={{
+                        textShadow: `0 0 20px ${mode.glowColor}`,
+                      }}
+                    >
+                      {mode.heroWord}
+                    </div>
+
+                    <h3 className="font-display text-lg font-bold text-white mt-0.5 group-hover:text-[var(--accent-bright)] transition-colors">
+                      {mode.title}
+                    </h3>
+
+                    <p className="font-ui text-xs text-white/70 mt-1 leading-relaxed">
+                      {mode.desc}
+                    </p>
+                  </div>
+
+                  {/* Feature Chips */}
+                  <div className="flex items-center gap-1.5 flex-wrap pt-2">
+                    {mode.chips.map((chip) => (
+                      <Chip
+                        key={chip}
+                        v={chip}
+                        tone="default"
+                        className="text-[10px] font-mono py-0.5 bg-white/10 border-white/15 text-white/90"
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Bottom Actions: Footer State + Fingerprint + Launch CTA */}
+                <div className="pt-3 border-t border-white/15 space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[10px] font-mono uppercase tracking-wider text-white/50 font-semibold">
+                        {mode.idLabel}
+                      </span>
+                      <span className="font-mono text-xs font-bold text-white/90 tracking-wide">
+                        {mode.idValue}
+                      </span>
+                    </div>
+
+                    <span className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-b from-white/15 to-white/5 border border-white/20 shadow-md text-white/70">
+                      <HugeiconsIcon icon={FingerPrintIcon} size={18} strokeWidth={1.8} />
+                    </span>
+                  </div>
+
+                  <Button
+                    variant="primary"
+                    size="md"
+                    href={mode.href}
+                    className="w-full shadow-lg hover:brightness-110 transition-all font-mono font-bold text-xs"
+                    style={{
+                      boxShadow: `0 0 20px ${mode.glowColor}`,
+                    }}
+                  >
+                    {mode.cta} &rarr;
+                  </Button>
                 </div>
               </div>
-
-              {/* Bottom Actions: Footer State + Primary CTA Button */}
-              <div className="pt-2 space-y-2.5 border-t border-white/10">
-                <div className="flex items-center justify-between text-[10px] font-mono text-[var(--text-3)] font-semibold tracking-wider">
-                  <span>{mode.footer}</span>
-                </div>
-
-                <Button
-                  variant="primary"
-                  size="md"
-                  href={mode.href}
-                  className="w-full shadow-lg hover:brightness-110 transition-all font-mono font-bold text-xs"
-                >
-                  {mode.cta} &rarr;
-                </Button>
-              </div>
-            </div>
+            </ReflectiveCard>
           </div>
         ))}
       </div>
