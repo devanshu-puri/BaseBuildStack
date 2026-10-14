@@ -28,13 +28,13 @@ export function TopBar({ title, showBack = false }: TopBarProps) {
   };
 
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between h-14 px-4 sm:px-6 bg-[var(--bg-base)]/75 backdrop-blur-md border-b border-[var(--border)] transition-colors">
+    <header className="sticky top-0 z-30 flex items-center justify-between h-14 px-4 sm:px-6 bg-[#0d0f17]/90 backdrop-blur-xl border-b border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.5)] transition-colors">
       <div className="flex items-center gap-3">
         {showBack && (
           <button
             onClick={() => window.history.back()}
             aria-label="Go back"
-            className="p-2 rounded-full border border-[var(--border)] bg-[var(--glass)] text-[var(--text-2)] hover:text-[var(--text)] hover:border-[var(--border-strong)] transition-all cursor-pointer focus-visible:outline-2 focus-visible:outline-[var(--accent-bright)]"
+            className="w-9 h-9 rounded-xl border border-white/12 bg-gradient-to-b from-white/[0.08] via-white/[0.02] to-black/30 bg-[#1a1c26] text-white hover:text-white hover:border-white/25 hover:bg-[#222533] shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_4px_12px_rgba(0,0,0,0.35)] transition-all flex items-center justify-center cursor-pointer active:scale-95 focus-visible:outline-2 focus-visible:outline-purple-400"
           >
             <svg
               className="w-4 h-4"
@@ -56,7 +56,7 @@ export function TopBar({ title, showBack = false }: TopBarProps) {
         {/* Current Streak Indicator (Prominent across all pages) */}
         <div
           title="Current Streak: 4 days"
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-amber-500/35 bg-amber-500/10 text-xs font-mono font-semibold text-amber-400 shadow-[0_0_14px_rgba(245,158,11,0.25)] select-none"
+          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-amber-500/30 bg-gradient-to-b from-amber-500/15 via-amber-500/5 to-black/30 bg-[#1c1815] text-xs font-mono font-semibold text-amber-400 shadow-[inset_0_1px_0_rgba(245,158,11,0.25),0_4px_12px_rgba(0,0,0,0.35)] select-none"
         >
           <span className="text-sm animate-pulse">🔥</span>
           <span className="font-bold text-white">4</span>
@@ -67,9 +67,9 @@ export function TopBar({ title, showBack = false }: TopBarProps) {
         <button
           type="button"
           aria-label="Search"
-          className="hidden lg:flex items-center gap-2.5 px-3.5 py-1.5 rounded-full border border-[var(--border)] bg-[var(--glass-subtle)] text-[12px] text-[var(--text-3)] hover:text-[var(--text)] hover:border-[var(--border-strong)] transition-all cursor-pointer"
+          className="hidden lg:flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl border border-white/12 bg-gradient-to-b from-white/[0.08] via-white/[0.02] to-black/30 bg-[#1a1c26] text-[12px] text-white/80 hover:text-white hover:border-white/25 hover:bg-[#222533] shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_4px_12px_rgba(0,0,0,0.35)] transition-all cursor-pointer"
         >
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-3.5 h-3.5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -77,8 +77,8 @@ export function TopBar({ title, showBack = false }: TopBarProps) {
               d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
             />
           </svg>
-          <span>Search...</span>
-          <kbd className="font-mono text-[10px] bg-[var(--glass-strong)] px-1.5 py-0.5 rounded-full border border-[var(--border)] text-[var(--text-2)]">
+          <span className="text-white/80">Search...</span>
+          <kbd className="font-mono text-[10px] bg-black/40 px-1.5 py-0.5 rounded-md border border-white/15 text-white/70">
             /
           </kbd>
         </button>
@@ -90,7 +90,7 @@ export function TopBar({ title, showBack = false }: TopBarProps) {
         <Link
           href="/settings"
           aria-label="Settings profile"
-          className="focus-visible:outline-2 focus-visible:outline-[var(--accent-bright)] rounded-full"
+          className="p-0.5 rounded-xl border border-white/12 bg-gradient-to-b from-white/[0.08] to-black/30 bg-[#1a1c26] shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_4px_12px_rgba(0,0,0,0.35)] hover:border-white/25 transition-all flex items-center justify-center focus-visible:outline-2 focus-visible:outline-purple-400"
         >
           <Avatar size="sm" name="User" />
         </Link>

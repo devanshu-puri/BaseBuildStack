@@ -40,7 +40,7 @@ export function BottomNav() {
 
   const items: DockItemData[] = [
     {
-      icon: <HugeiconsIcon icon={Home01Icon} size={20} strokeWidth={1.8} />,
+      icon: <HugeiconsIcon icon={Home01Icon} size={22} strokeWidth={1.8} className="text-white" />,
       label: "Home",
       href: "/home",
       active: pathname === "/home" || pathname === "/",
@@ -50,7 +50,7 @@ export function BottomNav() {
       ],
     },
     {
-      icon: <HugeiconsIcon icon={AlgorithmIcon} size={20} strokeWidth={1.8} />,
+      icon: <HugeiconsIcon icon={AlgorithmIcon} size={22} strokeWidth={1.8} className="text-white" />,
       label: "M1: DSA Rounds",
       href: "/dsa",
       active: pathname.startsWith("/dsa") || pathname.startsWith("/m1"),
@@ -63,7 +63,7 @@ export function BottomNav() {
       ],
     },
     {
-      icon: <HugeiconsIcon icon={Brain02Icon} size={20} strokeWidth={1.8} />,
+      icon: <HugeiconsIcon icon={Brain02Icon} size={22} strokeWidth={1.8} className="text-white" />,
       label: "M2: Skill Diagnostic",
       href: "/quiz",
       active: pathname.startsWith("/quiz") || pathname.startsWith("/m2"),
@@ -76,7 +76,7 @@ export function BottomNav() {
       ],
     },
     {
-      icon: <HugeiconsIcon icon={BookOpen01Icon} size={20} strokeWidth={1.8} />,
+      icon: <HugeiconsIcon icon={BookOpen01Icon} size={22} strokeWidth={1.8} className="text-white" />,
       label: "M3: Tech Bites",
       href: "/m3",
       active: pathname.startsWith("/m3"),
@@ -87,7 +87,7 @@ export function BottomNav() {
       ],
     },
     {
-      icon: <HugeiconsIcon icon={Analytics01Icon} size={20} strokeWidth={1.8} />,
+      icon: <HugeiconsIcon icon={Analytics01Icon} size={22} strokeWidth={1.8} className="text-white" />,
       label: "Progress",
       href: "/progress",
       active: pathname.startsWith("/progress"),
@@ -97,7 +97,10 @@ export function BottomNav() {
       ],
     },
     {
-      icon: <HugeiconsIcon icon={Bookmark01Icon} size={20} strokeWidth={1.8} />,
+      separator: true,
+    },
+    {
+      icon: <HugeiconsIcon icon={Bookmark01Icon} size={22} strokeWidth={1.8} className="text-white" />,
       label: "Bookmarks",
       href: "/bookmarks",
       active: pathname.startsWith("/bookmarks"),
@@ -113,17 +116,17 @@ export function BottomNav() {
         items={items}
         position="bottom"
         theme="dark"
-        baseItemSize={44}
-        magnification={62}
-        distance={160}
-        panelHeight={58}
+        baseItemSize={48}
+        magnification={64}
+        distance={140}
+        panelHeight={68}
         gap={8}
-        roundness={1}
+        roundness={0.65}
         bounce={true}
         tiles={true}
         showLabels={true}
         showIndicators={true}
-        accentColor="#8B7CFF"
+        accentColor="#C084FC"
         className="shadow-2xl"
       />
     </nav>

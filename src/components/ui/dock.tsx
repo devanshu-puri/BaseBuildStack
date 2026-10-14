@@ -66,21 +66,21 @@ const POP = 'cubic-bezier(0.2, 1.25, 0.4, 1)';
 
 const THEMES = {
   dark: {
-    '--dock-panel': 'linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.03) 100%), rgba(12, 14, 20, 0.84)',
-    '--dock-panel-edge': 'rgba(255, 255, 255, 0.16)',
-    '--dock-panel-highlight': 'rgba(255, 255, 255, 0.26)',
-    '--dock-panel-shadow': '0 24px 50px -18px rgba(0, 0, 0, 0.95), 0 0 24px -4px rgba(139, 124, 255, 0.18)',
-    '--dock-tile': 'linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.04) 100%), rgba(22, 26, 38, 0.8)',
-    '--dock-tile-edge': 'rgba(255, 255, 255, 0.14)',
-    '--dock-tile-highlight': 'rgba(255, 255, 255, 0.25)',
-    '--dock-tile-shadow': '0 4px 12px -3px rgba(0, 0, 0, 0.7)',
-    '--dock-ink': '#f8fafc',
+    '--dock-panel': 'linear-gradient(180deg, rgba(26, 28, 38, 0.88) 0%, rgba(15, 17, 24, 0.94) 100%)',
+    '--dock-panel-edge': 'rgba(255, 255, 255, 0.12)',
+    '--dock-panel-highlight': 'rgba(255, 255, 255, 0.18)',
+    '--dock-panel-shadow': '0 24px 60px -12px rgba(0, 0, 0, 0.9), 0 0 28px rgba(139, 124, 255, 0.12)',
+    '--dock-tile': 'linear-gradient(180deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.02) 60%, rgba(0, 0, 0, 0.3) 100%), #1d1f29',
+    '--dock-tile-edge': 'rgba(255, 255, 255, 0.12)',
+    '--dock-tile-highlight': 'rgba(255, 255, 255, 0.20)',
+    '--dock-tile-shadow': '0 4px 14px -2px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.16)',
+    '--dock-ink': '#ffffff',
     '--dock-label': 'rgba(14, 16, 24, 0.95)',
     '--dock-label-ink': '#ffffff',
-    '--dock-dot': '#8B7CFF',
-    '--dock-separator': 'rgba(255, 255, 255, 0.16)',
-    '--dock-press': 'brightness(0.75)',
-    '--dock-menu': 'rgba(18, 21, 30, 0.94)',
+    '--dock-dot': '#C084FC',
+    '--dock-separator': 'rgba(255, 255, 255, 0.14)',
+    '--dock-press': 'brightness(0.85)',
+    '--dock-menu': 'rgba(18, 21, 30, 0.95)',
     '--dock-menu-edge': 'rgba(255, 255, 255, 0.16)',
     '--dock-menu-ink': '#f8fafc',
     '--dock-menu-muted': 'rgba(244, 244, 245, 0.5)',
@@ -593,18 +593,17 @@ export default function Dock({
   useIsomorphicLayoutEffect(() => {
     const root = rootRef.current;
     if (!root) return undefined;
-    const host = root.offsetParent ?? (typeof document !== 'undefined' ? document.documentElement : null);
-    if (!host) return undefined;
     const measure = () => {
       const s = settingsRef.current;
-      const room = (s.vertical ? host.clientHeight : host.clientWidth) - EDGE * 2;
-      const next = s.length > 0 ? Math.min(1, Math.max(0.4, room / s.length)) : 1;
+      const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
+      const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 800;
+      const room = (s.vertical ? viewportHeight : viewportWidth) - EDGE * 2;
+      const next = s.length > 0 ? Math.min(1, Math.max(0.75, room / s.length)) : 1;
       setFit(Math.round(next * 1000) / 1000);
     };
     measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(host);
-    return () => observer.disconnect();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
   }, [length, vertical, rawPeak, rawBase]);
 
   useEffect(() => {
@@ -1057,6 +1056,7 @@ export default function Dock({
             aria-haspopup={item.menu?.length ? 'menu' : undefined}
             aria-expanded={item.menu?.length ? openIndex === index : undefined}
             data-open={openIndex === index ? '' : undefined}
+            data-active={item.active ? '' : undefined}
             onPointerDown={event => {
               skipRef.current = -1;
               const current = menuRef.current;
