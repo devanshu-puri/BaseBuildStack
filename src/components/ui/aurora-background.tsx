@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import { useTheme } from "@/components/theme/theme-provider";
+import PatternWaves from "./pattern-waves";
 
 export type AuroraIntensity = "app" | "hero" | "focus";
 
@@ -11,7 +13,13 @@ interface AuroraBackgroundProps {
 
 export function AuroraBackground({ intensity: propIntensity }: AuroraBackgroundProps) {
   const pathname = usePathname() || "";
+  const { resolvedTheme } = useTheme();
   const [isPaused, setIsPaused] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Compute route-driven intensity when not explicitly provided
   const computedIntensity: AuroraIntensity = React.useMemo(() => {
@@ -56,44 +64,54 @@ export function AuroraBackground({ intensity: propIntensity }: AuroraBackgroundP
     };
   }, []);
 
+  const isLight = mounted && resolvedTheme === "light";
+
+  // Dynamic opacity based on screen intensity mode
+  const waveOpacity = isLight
+    ? computedIntensity === "hero"
+      ? 0.35
+      : computedIntensity === "focus"
+      ? 0.18
+      : 0.28
+    : computedIntensity === "hero"
+    ? 0.52
+    : computedIntensity === "focus"
+    ? 0.25
+    : 0.42;
+
   return (
     <div
-      className="aurora"
-      data-intensity={computedIntensity}
-      data-paused={isPaused ? "true" : "false"}
+      className="fixed inset-0 -z-10 pointer-events-none overflow-hidden select-none"
+      style={{ backgroundColor: isLight ? "#F8F9FC" : "#07080a" }}
       aria-hidden="true"
     >
-      {/* 1. Living Warm Aurora Diagonal Light-Blades */}
-      <div className="blades-container">
-        <div className="light-blade blade-1" />
-        <div className="light-blade blade-2" />
-        <div className="light-blade blade-3" />
-        <div className="light-blade blade-4" />
-        <div className="light-blade blade-5" />
-      </div>
-
-      {/* 2. Soft Radial Vignette: Frames edges and grounds into near-black #07080a */}
-      <div className="aurora-vignette" />
-
-      {/* 3. Subtle Film Grain: SVG feTurbulence for crafted optical texture */}
-      <svg
-        className="aurora-grain pointer-events-none absolute inset-0 w-full h-full opacity-[0.04] mix-blend-overlay"
-        aria-hidden="true"
-      >
-        <filter id="aurora-noise">
-          <feTurbulence
-            type="fractalNoise"
-            baseFrequency="0.75"
-            numOctaves="3"
-            stitchTiles="stitch"
-          />
-          <feColorMatrix
-            type="matrix"
-            values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.18 0"
-          />
-        </filter>
-        <rect width="100%" height="100%" filter="url(#aurora-noise)" />
-      </svg>
+      {mounted && (
+        <PatternWaves
+          preset="silk"
+          pattern="dot"
+          wave="silk"
+          color={isLight ? "#6C4DFF" : "#8B7CFF"}
+          backgroundColor={isLight ? "#F8F9FC" : "#07080a"}
+          opacity={waveOpacity}
+          spacing={10}
+          markSize={0.92}
+          depth={0.85}
+          light={0}
+          shine={0.65}
+          contrast={1.15}
+          speed={0.28}
+          scale={1.05}
+          direction={25}
+          fade="edges"
+          fadeSize={0.5}
+          interactive={true}
+          cursorSize={55}
+          cursorStrength={0.55}
+          paused={isPaused}
+          intro={true}
+          className="w-full h-full"
+        />
+      )}
     </div>
   );
 }
