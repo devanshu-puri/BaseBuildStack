@@ -38,6 +38,15 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "BaseBuildStack",
   description: "Diagnose, learn in 15 minutes, and drill technical rounds in one loop.",
+  icons: {
+    icon: [
+      { url: "/icon.png", type: "image/png" },
+      { url: "/favicon.ico" },
+    ],
+    apple: [
+      { url: "/apple-icon.png", type: "image/png" },
+    ],
+  },
 };
 
 const themeScript = `
