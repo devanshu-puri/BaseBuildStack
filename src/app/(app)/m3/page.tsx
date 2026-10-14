@@ -2,23 +2,16 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import { GlassCard } from "@/components/ui/glass-card";
-import { Chip, ChipTone } from "@/components/ui/chip";
-import { Button } from "@/components/ui/button";
 import { getAllLessons } from "@/content/m3/lessons";
 import { Lesson, LessonPath } from "@/content/m3/lesson-schema";
 
 // ---------------------------------------------------------------------------
-// Tracks metadata with distinctive Aurora tones, icons, and tech descriptions
+// 1. Checkpoint Track Metadata (Minimal Initial Content per user requirement)
 // ---------------------------------------------------------------------------
 interface TrackMeta {
   id: LessonPath;
   title: string;
-  subtitle: string;
-  about: string;
-  tone: ChipTone;
-  accentHex: string;
-  gradient: string;
+  shortInfo: string;
   iconSvg: React.ReactNode;
 }
 
@@ -26,81 +19,56 @@ const TRACKS: TrackMeta[] = [
   {
     id: "ai",
     title: "AI & LLM Systems",
-    subtitle: "RAG architectures, autoregressive sampling, context windows & vector geometry",
-    about:
-      "Foundational architectures powering modern AI applications. Learn how transformer decoders generate autoregressive text, how subword tokenization bounds memory, how dense vector embeddings map semantic intent, and how retrieval-augmented generation (RAG) grounds models in verified truth without fine-tuning.",
-    tone: "accent",
-    accentHex: "#8B7CFF",
-    gradient: "from-[#8B7CFF] to-[#C084FC]",
+    shortInfo: "Transformer architectures, RAG pipelines, and vector embeddings.",
     iconSvg: (
-      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M13 10V3L4 14h7v7l9-11h-7z" />
+      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 18a8 8 0 110-16 8 8 0 010 16zm1-13h-2v4H7v2h4v4h2v-4h4V9h-4V7z" />
       </svg>
     ),
   },
   {
     id: "backend",
-    title: "Backend & Distributed Systems",
-    subtitle: "Cache-aside strategies, HTTP safe/idempotent semantics & load shedding",
-    about:
-      "Resilient, high-throughput backend infrastructure. Master distributed cache-aside patterns, cache stampede prevention, idempotent HTTP/REST semantics for financial APIs, and graceful degradation under concurrent load.",
-    tone: "tint1",
-    accentHex: "#A855F7",
-    gradient: "from-[#A855F7] to-[#E056FD]",
+    title: "Backend & Distributed",
+    shortInfo: "Idempotency, cache stampede prevention, and high-throughput APIs.",
     iconSvg: (
-      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
+      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M4 6h16v4H4zm0 8h16v4H4z" />
       </svg>
     ),
   },
   {
     id: "frontend",
     title: "Frontend Architecture",
-    subtitle: "Client-server contracts, optimistic updates & state caching semantics",
-    about:
-      "Robust client-server contracts and high-performance UI systems. Learn HTTP idempotency semantics, safe vs mutating verbs, optimistic updates, and cache synchronization between browser and distributed servers.",
-    tone: "tint2",
-    accentHex: "#FFB547",
-    gradient: "from-[#FFB547] to-[#FF7675]",
+    shortInfo: "Robust client-server contracts and optimistic UI updates.",
     iconSvg: (
-      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M3 4h18v12H3zm2 2v8h14V6zm4 10h6v2H9z" />
       </svg>
     ),
   },
   {
     id: "devops",
     title: "DevOps & Cloud",
-    subtitle: "Linux namespaces, cgroups containerization & zero-downtime Canary CI/CD",
-    about:
-      "Cloud-native isolation and automated deployment pipelines. Master Linux kernel primitives (Namespaces & cgroups) that power Docker containers, multi-stage image optimization, and zero-downtime Canary vs Blue-Green delivery strategies.",
-    tone: "tint4",
-    accentHex: "#2EE6C5",
-    gradient: "from-[#2EE6C5] to-[#00CEC9]",
+    shortInfo: "Automated pipelines, multi-stage image optimization, and blue-green delivery.",
     iconSvg: (
-      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M19.35 10.04A7.49 7.49 0 0012 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 000 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM19 18H6c-2.21 0-4-1.79-4-4s1.79-4 4-4h.71C7.37 7.69 9.48 6 12 6c3.04 0 5.5 2.46 5.5 5.5v.5H19c1.66 0 3 1.34 3 3s-1.34 3-3 3z" />
       </svg>
     ),
   },
   {
     id: "foundations",
     title: "Core CS Foundations",
-    subtitle: "Subword BPE encodings, high-dimensional vector math & memory hierarchies",
-    about:
-      "The enduring theoretical primitives beneath all modern stacks. Explore Byte-Pair Encoding algorithms, high-dimensional vector spaces, memory caching hierarchies, and state machine idempotency.",
-    tone: "tint3",
-    accentHex: "#FF6584",
-    gradient: "from-[#FF6584] to-[#FDA7DF]",
+    shortInfo: "Data structures, algorithmic complexity, and memory management.",
     iconSvg: (
-      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M12 2L2 7l10 5 10-5-10-5zM2 12l10 5 10-5M2 17l10 5 10-5" />
       </svg>
     ),
   },
 ];
 
-// Helper to provide distinctive icons for chapter buttons
+// Helper to provide icons for chapter items
 function getLessonIcon(lessonId: string): string {
   switch (lessonId) {
     case "rag-pipeline":
@@ -125,8 +93,7 @@ function getLessonIcon(lessonId: string): string {
 }
 
 // ---------------------------------------------------------------------------
-// Web Audio API: Zero-Asset Synthesized Metallic Chime
-// Reusable singleton audio context with crisp inharmonic partials
+// 2. Web Audio API: Zero-Asset Synthesized Metallic Chime
 // ---------------------------------------------------------------------------
 let sharedAudioCtx: AudioContext | null = null;
 
@@ -154,7 +121,7 @@ function playMetallicChime(pitchMultiplier = 1) {
     const now = ctx.currentTime;
     const baseFreq = 880 * pitchMultiplier;
 
-    // Harmonic / Inharmonic partials characteristic of striking metal (chime/bell)
+    // Inharmonic partials characteristic of striking a resonant metal chime
     const partials = [
       { ratio: 1.0, type: "sine" as OscillatorType, gain: 0.12, decay: 0.28 },
       { ratio: 2.76, type: "sine" as OscillatorType, gain: 0.08, decay: 0.22 },
@@ -189,36 +156,41 @@ function playMetallicChime(pitchMultiplier = 1) {
       osc.stop(now + decay + 0.02);
     });
   } catch {
-    // Graceful fallback if audio is restricted by autoplay policy
+    // Graceful fallback
   }
 }
 
 // ---------------------------------------------------------------------------
-// Main Module III Discovery Page
+// 3. Module III 3D Tech Path Discovery Page
 // ---------------------------------------------------------------------------
 export default function Module3DiscoveryPage() {
   const allLessons = getAllLessons();
 
   // State
-  const [selectedPath, setSelectedPath] = useState<string>("all");
-  const [searchQuery, setSearchQuery] = useState("");
   const [soundEnabled, setSoundEnabled] = useState(true);
-  const [globalEli5, setGlobalEli5] = useState(false);
-  const [cardEli5State, setCardEli5State] = useState<Record<string, boolean>>({});
-  const [expandedLessonId, setExpandedLessonId] = useState<string | null>(null);
-  const [activeNodeIndex, setActiveNodeIndex] = useState<number>(-1);
-  const [scrollProgress, setScrollProgress] = useState(0);
+  const [activeCardIndex, setActiveCardIndex] = useState<number>(0);
+  const [selectedTrackForChapters, setSelectedTrackForChapters] = useState<TrackMeta | null>(null);
+  const [modalEli5, setModalEli5] = useState(false);
   const [geminiModalOpen, setGeminiModalOpen] = useState(false);
-  const [svgPathD, setSvgPathD] = useState<string>("");
-  const [containerWidthPx, setContainerWidthPx] = useState(1000);
-  const [containerHeightPx, setContainerHeightPx] = useState(2400);
-  const [beadPos, setBeadPos] = useState<{ x: number; y: number } | null>(null);
 
-  // Refs for scrollytelling path calculation
-  const trailContainerRef = useRef<HTMLDivElement>(null);
-  const checkpointRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const activePathRef = useRef<SVGPathElement>(null);
-  const prevActiveNodeRef = useRef<number>(-1);
+  // Refs for pure 3D Bezier scroll engine
+  const containerRef = useRef<HTMLDivElement>(null);
+  const svgLayerRef = useRef<SVGSVGElement>(null);
+  const pathGroupRef = useRef<SVGGElement>(null);
+  const trailGroupRef = useRef<SVGGElement>(null);
+  const particleRef = useRef<SVGCircleElement>(null);
+
+  // 6 nodes: 0: Origin, 1..5: Checkpoints (AI, Backend, Frontend, DevOps, Core CS)
+  const nodeRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const pathsRef = useRef<SVGPathElement[]>([]);
+  const pathLengthsRef = useRef<number[]>([]);
+  const trailsRef = useRef<SVGCircleElement[]>([]);
+
+  const currentP = useRef(0);
+  const targetP = useRef(0);
+  const activeIndexRef = useRef(0);
+  const soundEnabledRef = useRef(soundEnabled);
+  soundEnabledRef.current = soundEnabled;
 
   // Load sound setting from localStorage
   useEffect(() => {
@@ -228,16 +200,14 @@ export default function Module3DiscoveryPage() {
         setSoundEnabled(saved === "true");
       }
     } catch {
-      // Ignore storage errors
+      // Ignore
     }
   }, []);
 
   const toggleSound = () => {
     const next = !soundEnabled;
     setSoundEnabled(next);
-    if (next) {
-      playMetallicChime(1.1);
-    }
+    if (next) playMetallicChime(1.1);
     try {
       localStorage.setItem("basebuildstack_sound_enabled", String(next));
     } catch {
@@ -245,752 +215,527 @@ export default function Module3DiscoveryPage() {
     }
   };
 
-  // Toggle individual card ELI5
-  const toggleCardEli5 = (lessonId: string) => {
-    setCardEli5State((prev) => ({
-      ...prev,
-      [lessonId]: !(prev[lessonId] ?? globalEli5),
-    }));
-    if (soundEnabled) {
-      playMetallicChime(1.3);
+  // Helper to compute node element center relative to SVG layer
+  const getCenter = useCallback((el: HTMLElement, containerRect: DOMRect) => {
+    const r = el.getBoundingClientRect();
+    return {
+      x: r.left + r.width / 2 - containerRect.left,
+      y: r.top + r.height / 2 - containerRect.top,
+    };
+  }, []);
+
+  // Construct Bezier splines connecting bottom node of card[i] to top node of card[i+1]
+  const drawPaths = useCallback(() => {
+    if (!svgLayerRef.current || !containerRef.current || !pathGroupRef.current) return;
+    const pathGroup = pathGroupRef.current;
+    pathGroup.innerHTML = "";
+    pathsRef.current = [];
+    pathLengthsRef.current = [];
+
+    const containerHeight = containerRef.current.scrollHeight;
+    svgLayerRef.current.style.height = `${containerHeight}px`;
+    const containerRect = svgLayerRef.current.getBoundingClientRect();
+
+    const N = nodeRefs.current.length; // 6 nodes
+    for (let i = 0; i < N - 1; i++) {
+      const startCard = nodeRefs.current[i];
+      const endCard = nodeRefs.current[i + 1];
+      if (!startCard || !endCard) continue;
+
+      const bottomNode = startCard.querySelector(".node-point.bottom") as HTMLElement;
+      const topNode = endCard.querySelector(".node-point.top") as HTMLElement;
+      if (!bottomNode || !topNode) continue;
+
+      const start = getCenter(bottomNode, containerRect);
+      const end = getCenter(topNode, containerRect);
+
+      const offset = i % 2 === 0 ? 90 : -90;
+      const cp1X = start.x + offset;
+      const cp1Y = start.y + (end.y - start.y) * 0.4;
+      const cp2X = end.x - offset;
+      const cp2Y = end.y - (end.y - start.y) * 0.4;
+
+      const d = `M ${start.x} ${start.y} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${end.x} ${end.y}`;
+
+      const dimPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      dimPath.setAttribute("d", d);
+      dimPath.setAttribute("fill", "none");
+      dimPath.setAttribute("stroke", "rgba(255, 255, 255, 0.08)");
+      dimPath.setAttribute("stroke-width", "2");
+      dimPath.setAttribute("stroke-dasharray", "4 6");
+
+      const activePath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      activePath.setAttribute("d", d);
+      activePath.setAttribute("fill", "none");
+      activePath.setAttribute("stroke", "url(#glow-grad)");
+      activePath.setAttribute("stroke-width", "3");
+      activePath.setAttribute("stroke-linecap", "round");
+      activePath.setAttribute("filter", "url(#glow)");
+
+      pathGroup.appendChild(dimPath);
+      pathGroup.appendChild(activePath);
+
+      const len = activePath.getTotalLength();
+      activePath.style.strokeDasharray = `${len}`;
+      activePath.style.strokeDashoffset = `${len}`;
+
+      pathsRef.current.push(activePath);
+      pathLengthsRef.current.push(len);
     }
-  };
+  }, [getCenter]);
 
-  // Filter lessons based on path and search query
-  const filteredLessons = allLessons.filter((l) => {
-    const matchesPath =
-      selectedPath === "all" || l.paths.includes(selectedPath as LessonPath);
-    const matchesSearch =
-      searchQuery.trim() === "" ||
-      l.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      l.outcome.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (l.eli5 && l.eli5.toLowerCase().includes(searchQuery.toLowerCase()));
-    return matchesPath && matchesSearch;
-  });
+  // Compute exact coordinate on path with 15% dwell time at start and end
+  const getPos = useCallback((p: number, N: number) => {
+    p = Math.max(0, Math.min(p, N - 1));
+    const idx = Math.min(Math.floor(p), N - 2);
+    const frac = p - idx;
+    const tt = Math.min(Math.max((frac - 0.15) / 0.7, 0), 1);
+    const path = pathsRef.current[idx];
+    const len = pathLengthsRef.current[idx];
+    if (!path || !len) return { x: 0, y: 0 };
+    return path.getPointAtLength(tt * len);
+  }, []);
 
-  // Checkpoints: The Track Stations along the path
-  const visibleTracks = (
-    selectedPath === "all"
-      ? TRACKS
-      : TRACKS.filter((t) => t.id === selectedPath)
-  ).filter((track) => {
-    const lessonsInTrack = filteredLessons.filter((l) =>
-      l.paths.includes(track.id)
-    );
-    return lessonsInTrack.length > 0 || selectedPath !== "all";
-  });
+  // Update card activation and trigger chime
+  const updateCards = useCallback((newActive: number) => {
+    if (activeIndexRef.current === newActive) return;
+    const prev = activeIndexRef.current;
+    activeIndexRef.current = newActive;
+    setActiveCardIndex(newActive);
 
-  // Dynamic SVG Metallic Spline Calculation based on real DOM checkpoints
-  useEffect(() => {
-    const calculatePath = () => {
-      if (!trailContainerRef.current) return;
-      const containerRect = trailContainerRef.current.getBoundingClientRect();
-      const width = Math.max(containerRect.width, 320);
-      const height = Math.max(containerRect.height, 1200);
-      setContainerWidthPx(width);
-      setContainerHeightPx(height);
+    // Play chime when entering a valid checkpoint
+    if (newActive > 0 && newActive !== prev && soundEnabledRef.current) {
+      const pitch = 0.95 + (newActive % 5) * 0.12;
+      playMetallicChime(pitch);
+    }
+  }, []);
 
-      const points: Array<{ x: number; y: number }> = [];
+  // Render SVG paths, main particle, and trailing comet
+  const render = useCallback(
+    (P: number, N: number) => {
+      const paths = pathsRef.current;
+      const pathLengths = pathLengthsRef.current;
+      if (paths.length === 0) return;
 
-      // 1. Origin point at top center (null)
-      points.push({ x: width / 2, y: 0 });
+      const idx = Math.min(Math.floor(P), N - 2);
+      const frac = P - idx;
 
-      // 2. Waypoints through each checkpoint card
-      checkpointRefs.current.forEach((el, idx) => {
-        if (!el) return;
-        const elRect = el.getBoundingClientRect();
-        const topY = elRect.top - containerRect.top;
-        const bottomY = elRect.bottom - containerRect.top;
-
-        // Enter connector at top of card
-        points.push({ x: width / 2, y: topY });
-        // Exit connector at bottom of card
-        points.push({ x: width / 2, y: bottomY });
+      // 1. Draw glowing lines up to progress
+      paths.forEach((p, i) => {
+        if (i < idx) p.style.strokeDashoffset = "0";
+        else if (i > idx) p.style.strokeDashoffset = `${pathLengths[i]}`;
+        else {
+          const tt = Math.min(Math.max((frac - 0.15) / 0.7, 0), 1);
+          p.style.strokeDashoffset = `${pathLengths[i] * (1 - tt)}`;
+        }
       });
 
-      // 3. Terminus point at bottom center
-      points.push({ x: width / 2, y: height });
-
-      if (points.length < 2) return;
-
-      // Construct smooth continuous cubic Bezier spline with gentle metallic curvature
-      let d = `M ${points[0].x.toFixed(1)},${points[0].y.toFixed(1)}`;
-
-      for (let i = 1; i < points.length; i++) {
-        const p0 = points[i - 1];
-        const p1 = points[i];
-        const dy = p1.y - p0.y;
-
-        // For segments between cards, sweep with a graceful curved arc
-        const isInterCardSegment = i % 2 === 1 && i > 0 && i < points.length - 1;
-        const sweep = isInterCardSegment
-          ? (i % 4 === 1 ? 40 : -40)
-          : 0;
-
-        const cp1x = p0.x + sweep;
-        const cp1y = p0.y + dy * 0.45;
-        const cp2x = p1.x + sweep;
-        const cp2y = p1.y - dy * 0.45;
-
-        d += ` C ${cp1x.toFixed(1)},${cp1y.toFixed(1)} ${cp2x.toFixed(1)},${cp2y.toFixed(1)} ${p1.x.toFixed(1)},${p1.y.toFixed(1)}`;
+      // 2. Move head particle
+      const pt = getPos(P, N);
+      if (particleRef.current) {
+        particleRef.current.setAttribute("cx", `${pt.x}`);
+        particleRef.current.setAttribute("cy", `${pt.y}`);
       }
 
-      setSvgPathD(d);
-    };
+      // 3. Move trail particles
+      const trails = trailsRef.current;
+      const trailCount = trails.length;
+      trails.forEach((t, i) => {
+        const trailP = Math.max(P - (i + 1) * 0.02, 0);
+        const tp = getPos(trailP, N);
+        t.setAttribute("cx", `${tp.x}`);
+        t.setAttribute("cy", `${tp.y}`);
+        const isResting = frac < 0.15 || frac > 0.85;
+        t.style.opacity = isResting ? "0" : `${1 - i / trailCount}`;
+      });
 
-    calculatePath();
-    window.addEventListener("resize", calculatePath);
-    const timer = setTimeout(calculatePath, 150);
-    return () => {
-      window.removeEventListener("resize", calculatePath);
-      clearTimeout(timer);
-    };
-  }, [visibleTracks.length, expandedLessonId]);
+      // 4. Dwell / Hold logic: 15% dwell time at start and end of every path
+      let newActive = -1;
+      if (frac < 0.15) newActive = idx; // Top Hold
+      else if (frac > 0.85) newActive = idx + 1; // Bottom Hold
+      else newActive = -1; // Travelling between cards
 
-  // Scroll tracking & metallic chime trigger
-  const handleScroll = useCallback(() => {
-    if (!trailContainerRef.current) return;
-    const container = trailContainerRef.current;
-    const rect = container.getBoundingClientRect();
-    const windowHeight = window.innerHeight;
+      updateCards(newActive);
+    },
+    [getPos, updateCards]
+  );
 
-    // Calculate progress between container top entering viewport and bottom leaving
-    const totalDistance = rect.height + windowHeight;
-    const currentDistance = windowHeight - rect.top;
-    const progress = Math.max(0, Math.min(1, currentDistance / totalDistance));
-    setScrollProgress(progress);
-
-    // Update bead coordinate along the active path
-    if (activePathRef.current) {
-      try {
-        const pathLen = activePathRef.current.getTotalLength();
-        const clampedProgress = Math.min(1, Math.max(0, progress * 1.12));
-        const pt = activePathRef.current.getPointAtLength(clampedProgress * pathLen);
-        setBeadPos({ x: pt.x, y: pt.y });
-      } catch {
-        // Fallback
-      }
-    }
-
-    // Identify which checkpoint is currently near the center trigger line
-    const triggerY = windowHeight * 0.45;
-    let closestIndex = -1;
-    let closestDistance = Infinity;
-
-    checkpointRefs.current.forEach((el, index) => {
-      if (!el) return;
-      const elRect = el.getBoundingClientRect();
-      const elCenter = elRect.top + elRect.height / 2;
-      const dist = Math.abs(elCenter - triggerY);
-
-      if (dist < closestDistance && dist < elRect.height * 0.75) {
-        closestDistance = dist;
-        closestIndex = index;
-      }
-    });
-
-    if (closestIndex !== -1 && closestIndex !== prevActiveNodeRef.current) {
-      setActiveNodeIndex(closestIndex);
-      prevActiveNodeRef.current = closestIndex;
-      if (soundEnabled) {
-        // Metallic chime pitch changes harmonically as you advance down the checkpoints
-        const pitch = 0.95 + (closestIndex % 5) * 0.09;
-        playMetallicChime(pitch);
-      }
-    }
-  }, [soundEnabled]);
-
+  // Initialize SVG Trail Particles (6 particles)
   useEffect(() => {
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    handleScroll();
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [handleScroll, visibleTracks.length, expandedLessonId]);
+    if (!trailGroupRef.current) return;
+    const trailGroup = trailGroupRef.current;
+    trailGroup.innerHTML = "";
+    trailsRef.current = [];
 
-  const expandedLesson = expandedLessonId ? allLessons.find((l) => l.id === expandedLessonId) : null;
+    const trailCount = 6;
+    for (let i = 0; i < trailCount; i++) {
+      const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      c.setAttribute("r", `${5 - i * 0.6}`);
+      c.setAttribute("fill", "#c084fc");
+      trailGroup.appendChild(c);
+      trailsRef.current.push(c);
+    }
+  }, []);
+
+  // Initialize paths and smooth animation scrub loop
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      drawPaths();
+      render(0, nodeRefs.current.length);
+    }, 150);
+
+    const onResize = () => {
+      drawPaths();
+      render(currentP.current, nodeRefs.current.length);
+    };
+    window.addEventListener("resize", onResize);
+
+    // Scroll listener mapping container progress to P: [0 .. N - 1]
+    const onScroll = () => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const windowHeight = window.innerHeight;
+
+      // start: container top reaches 30% of viewport
+      // end: container bottom reaches 85% of viewport
+      const startY = windowHeight * 0.3;
+      const endY = windowHeight * 0.85;
+      const totalDist = rect.height - (endY - startY);
+      const currentScroll = startY - rect.top;
+      const rawProgress = Math.max(0, Math.min(1, currentScroll / Math.max(1, totalDist)));
+      targetP.current = rawProgress * (nodeRefs.current.length - 1);
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+
+    // 60fps/120fps smooth scrub interpolation loop (matching GSAP scrub: 0.1)
+    let rafId: number;
+    const loop = () => {
+      const diff = targetP.current - currentP.current;
+      if (Math.abs(diff) > 0.0005) {
+        currentP.current += diff * 0.15;
+        render(currentP.current, nodeRefs.current.length);
+      }
+      rafId = requestAnimationFrame(loop);
+    };
+    rafId = requestAnimationFrame(loop);
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("scroll", onScroll);
+      cancelAnimationFrame(rafId);
+    };
+  }, [drawPaths, render]);
+
+  // Lessons inside the selected track modal
+  const modalLessons = selectedTrackForChapters
+    ? allLessons.filter((l) => l.paths.includes(selectedTrackForChapters.id))
+    : [];
 
   return (
-    <div className="relative min-h-screen py-4 max-w-5xl mx-auto space-y-8 select-none">
-      {/* Inline styles for the smooth purple aurora flow along the metallic path */}
-      <style jsx global>{`
-        @keyframes purpleAuroraFlow {
-          from {
-            stroke-dashoffset: 0;
-          }
-          to {
-            stroke-dashoffset: -48;
-          }
-        }
-        .animate-aurora-stream {
-          animation: purpleAuroraFlow 3.2s linear infinite;
-        }
-      `}</style>
-
+    <div className="relative min-h-screen py-4 max-w-4xl mx-auto space-y-10 select-none">
       {/* -------------------------------------------------------------------- */}
-      {/* 1. Header Bar: Minimal, Spacious & Elegant (No Clutter)              */}
+      {/* 1. Header Bar: Pick a path                                           */}
       {/* -------------------------------------------------------------------- */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-[var(--border)]">
-        <div className="space-y-3">
-          <div className="flex items-center gap-2.5">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pb-6 border-b border-white/10 text-center sm:text-left">
+        <div className="space-y-2">
+          <div className="flex items-center justify-center sm:justify-start gap-2.5">
             <span className="w-2 h-2 rounded-full bg-purple-400 shadow-[0_0_10px_#A855F7] animate-pulse" />
             <span className="text-xs font-mono tracking-widest text-purple-300 uppercase font-semibold">
               Module III · 15-Minute Tech Bites
             </span>
           </div>
 
-          <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-black text-[var(--text)] tracking-tight">
-            Pick a path. Learn one idea in 15 minutes.
+          <h1 className="font-display text-3xl sm:text-5xl font-black text-white tracking-tight">
+            Pick a path.
           </h1>
 
-          <p className="font-ui text-sm sm:text-base text-[var(--text-2)] max-w-2xl leading-relaxed">
-            Scroll the metallic trail from origin. Explore each tech checkpoint,
-            open boxy chapters on-demand, and toggle ELI5 to build intuition.
+          <p className="font-ui text-sm sm:text-base text-[var(--text-muted)] max-w-xl leading-relaxed">
+            Scroll to explore the architecture checkpoints. Follow the glowing signal
+            from Origin down to each station.
           </p>
         </div>
 
-        {/* Global Controls: Sound Toggle + Global ELI5 + Retest Queue */}
-        <div className="flex flex-wrap items-center gap-3 shrink-0">
-          {/* Sound Toggle Button */}
+        {/* Global Controls */}
+        <div className="flex items-center justify-center sm:justify-end gap-3 shrink-0">
           <button
             type="button"
             onClick={toggleSound}
-            aria-label={soundEnabled ? "Mute metallic sounds" : "Enable metallic sounds"}
-            className="px-3.5 py-1.5 rounded-full border text-xs font-mono font-medium flex items-center gap-2 bg-[#121316]/80 border-[#2a2d35] hover:border-purple-400 transition-all cursor-pointer shadow-md"
-          >
-            <span
-              className={`w-2 h-2 rounded-full transition-all ${
-                soundEnabled
-                  ? "bg-purple-400 shadow-[0_0_8px_#C084FC]"
-                  : "bg-[#565c69]"
-              }`}
-            />
-            <span className={soundEnabled ? "text-white" : "text-[var(--text-3)]"}>
-              {soundEnabled ? "Sound ON" : "Sound OFF"}
-            </span>
-          </button>
-
-          {/* Global ELI5 Toggle */}
-          <button
-            type="button"
-            onClick={() => {
-              const next = !globalEli5;
-              setGlobalEli5(next);
-              setCardEli5State({});
-              if (soundEnabled) playMetallicChime(1.4);
-            }}
+            aria-label="Toggle Sound Effects"
             className={`px-3.5 py-1.5 rounded-full border text-xs font-mono font-semibold flex items-center gap-2 transition-all cursor-pointer ${
-              globalEli5
-                ? "bg-[rgba(255,181,71,0.15)] border-[#FFB547] text-[#FFB547] shadow-[0_0_14px_rgba(255,181,71,0.25)]"
-                : "bg-[var(--glass-subtle)] border-[var(--border)] text-[var(--text-3)] hover:text-[var(--text)]"
+              soundEnabled
+                ? "bg-purple-950/40 border-purple-500/50 text-purple-300 shadow-[0_0_15px_rgba(168,85,247,0.3)]"
+                : "bg-white/5 border-white/10 text-white/50 hover:text-white"
             }`}
           >
-            <span>👶</span>
-            <span>ELI5 All {globalEli5 ? "ON" : "OFF"}</span>
+            <span>{soundEnabled ? "🔊" : "🔇"}</span>
+            <span>Sound {soundEnabled ? "ON" : "MUTED"}</span>
           </button>
 
-          {/* Retest Queue Link */}
           <Link
             href="/m3/retest"
-            className="px-4 py-1.5 rounded-full bg-[var(--accent-grad)] text-white text-xs font-mono font-bold shadow-[0_0_16px_rgba(94,78,240,0.4)] hover:brightness-110 transition-all flex items-center gap-2"
+            className="px-3.5 py-1.5 rounded-full border border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/20 text-xs font-mono font-bold text-purple-300 transition-all flex items-center gap-1.5"
           >
             <span>Retest Queue</span>
-            <span className="px-1.5 py-0.2 rounded-full bg-white/20 text-[10px]">
-              SM-2
-            </span>
+            <span>&rarr;</span>
           </Link>
         </div>
       </div>
 
       {/* -------------------------------------------------------------------- */}
-      {/* 2. Sticky Track Filter Bar & Search                                  */}
+      {/* 2. 3D Perspective Container with SVG Wire Layer & Pop Cards          */}
       {/* -------------------------------------------------------------------- */}
-      <div className="sticky top-16 z-30 py-2.5 px-4 rounded-2xl bg-[var(--bg-base)]/90 backdrop-blur-xl border border-[var(--border)] flex flex-col md:flex-row items-center justify-between gap-3 shadow-xl">
-        {/* Track Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto scrollbar-none py-1">
-          <button
-            type="button"
-            onClick={() => {
-              setSelectedPath("all");
-              if (soundEnabled) playMetallicChime(1.0);
+      <div
+        ref={containerRef}
+        id="container"
+        className="relative pb-[40vh]"
+        style={{
+          perspective: "1200px",
+          transformStyle: "preserve-3d",
+        }}
+      >
+        {/* SVG Wire Layer with Bezier curves, glow filter & comet particles */}
+        <svg
+          ref={svgLayerRef}
+          id="svg-layer"
+          className="absolute top-0 left-0 w-full pointer-events-none z-10"
+          style={{ transform: "translateZ(-50px)" }}
+        >
+          <defs>
+            <linearGradient id="glow-grad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="transparent" />
+              <stop offset="50%" stopColor="#c084fc" />
+              <stop offset="100%" stopColor="#ffffff" />
+            </linearGradient>
+
+            <filter id="glow">
+              <feGaussianBlur stdDeviation="4" result="coloredBlur" />
+              <feMerge>
+                <feMergeNode in="coloredBlur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+
+          <g ref={pathGroupRef} id="path-group" />
+          <g ref={trailGroupRef} id="trail-group" />
+          <circle ref={particleRef} id="particle" r="6" fill="#fff" filter="url(#glow)" />
+        </svg>
+
+        {/* ------------------------------------------------------------------ */}
+        {/* Nodes Column: Origin [0, 0] at top -> 5 Tech Checkpoints below     */}
+        {/* ------------------------------------------------------------------ */}
+        <div
+          className="flex flex-col items-center gap-36 sm:gap-40 relative z-20"
+          style={{ transformStyle: "preserve-3d" }}
+        >
+          {/* Node 0: Origin Station (Start Point [0, 0]) */}
+          <div
+            ref={(el) => {
+              nodeRefs.current[0] = el;
             }}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-mono font-semibold whitespace-nowrap transition-all cursor-pointer ${
-              selectedPath === "all"
-                ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-[0_0_14px_rgba(168,85,247,0.45)]"
-                : "bg-[var(--glass-subtle)] text-[var(--text-2)] hover:text-[var(--text)] border border-[var(--border)]"
-            }`}
+            className="relative w-[min(90%,420px)] rounded-2xl p-5 border backdrop-blur-xl transition-all duration-500 select-none"
+            style={{
+              background:
+                "linear-gradient(180deg, rgba(30, 20, 50, 0.85) 0%, rgba(19, 13, 34, 0.98) 100%)",
+              transformStyle: "preserve-3d",
+              transform:
+                activeCardIndex === 0
+                  ? "rotateX(0deg) rotateY(0deg) translateZ(40px) scale(1.03)"
+                  : "rotateX(15deg) rotateY(0deg) translateZ(-40px) scale(0.95)",
+              borderColor:
+                activeCardIndex === 0 ? "rgba(192, 132, 252, 0.75)" : "rgba(255, 255, 255, 0.08)",
+              boxShadow:
+                activeCardIndex === 0
+                  ? "0 30px 60px -15px rgba(139, 92, 246, 0.35), 0 0 25px rgba(139, 92, 246, 0.18) inset"
+                  : "0 10px 30px rgba(0, 0, 0, 0.6)",
+            }}
           >
-            All Tracks ({TRACKS.length})
-          </button>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-400/30 flex items-center justify-center text-purple-300">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <circle cx="12" cy="12" r="3" strokeWidth="2" />
+                    <path strokeLinecap="round" strokeWidth="2" d="M12 2v4m0 12v4M2 12h4m12 0h4" />
+                  </svg>
+                </div>
+                <div>
+                  <div className="text-[10px] font-mono uppercase tracking-widest text-purple-400 font-bold">
+                    ORIGIN · TRAIL START
+                  </div>
+                  <h3 className="font-display text-lg font-bold text-white tracking-tight">
+                    Architecture Signal [0, 0]
+                  </h3>
+                </div>
+              </div>
+              <span className="px-2.5 py-1 rounded-full bg-purple-500/15 border border-purple-400/30 text-[10px] font-mono font-bold text-purple-300">
+                START
+              </span>
+            </div>
+            <p className="text-xs text-[var(--text-muted)] mt-2 leading-relaxed">
+              Scroll down to track the pulse across architecture checkpoints.
+            </p>
 
-          {TRACKS.map((t) => {
-            const count = allLessons.filter((l) => l.paths.includes(t.id)).length;
-            const isSelected = selectedPath === t.id;
-            return (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => {
-                  setSelectedPath(t.id);
-                  if (soundEnabled) playMetallicChime(1.15);
-                }}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-mono font-semibold whitespace-nowrap flex items-center gap-1.5 transition-all cursor-pointer ${
-                  isSelected
-                    ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-[0_0_14px_rgba(168,85,247,0.45)]"
-                    : "bg-[var(--glass-subtle)] text-[var(--text-2)] hover:text-[var(--text)] border border-[var(--border)]"
-                }`}
-              >
-                <span>{t.title}</span>
-                <span className="text-[10px] opacity-70">({count})</span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Search Input */}
-        <div className="relative w-full md:w-64 shrink-0">
-          <input
-            type="text"
-            placeholder="Search RAG, Cache, Docker..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-8 pr-3 py-1.5 rounded-full border border-[var(--border)] bg-[var(--glass-subtle)] text-xs text-[var(--text)] placeholder-[var(--text-3)] focus:outline-none focus:border-purple-400"
-          />
-          <svg
-            className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--text-3)]"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-            />
-          </svg>
-        </div>
-      </div>
-
-      {/* -------------------------------------------------------------------- */}
-      {/* 3. The Scrollytelling Trail with Metallic Curved Line & Purple Aurora */}
-      {/* -------------------------------------------------------------------- */}
-      <div ref={trailContainerRef} className="relative pt-4 pb-24">
-        {/* Origin Marker at Null (Top of Trail) */}
-        <div className="flex flex-col items-center justify-center space-y-2 mb-12">
-          <div className="px-3 py-1 rounded-full bg-purple-950/40 border border-purple-500/30 text-[10px] font-mono text-purple-300 uppercase tracking-widest flex items-center gap-2 shadow-[0_0_12px_rgba(168,85,247,0.2)]">
-            <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
-            <span>ORIGIN (NULL) · CURRICULUM ENTRY</span>
-          </div>
-          <div className="w-8 h-8 rounded-full border-2 border-purple-500/50 bg-[#0d0e14] flex items-center justify-center shadow-[0_0_16px_rgba(168,85,247,0.4)]">
-            <div className="w-2.5 h-2.5 rounded-full bg-purple-400" />
-          </div>
-        </div>
-
-        {/* Dynamic SVG Metallic Curved Line with Purple Aurora Gradient */}
-        <div className="absolute inset-0 pointer-events-none overflow-visible" aria-hidden="true">
-          <svg
-            className="w-full h-full"
-            viewBox={`0 0 ${containerWidthPx} ${containerHeightPx}`}
-          >
-            <defs>
-              {/* Metallic Titanium / Chrome Gradient for base track */}
-              <linearGradient id="metallic-chrome" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#252830" />
-                <stop offset="25%" stopColor="#4f5666" />
-                <stop offset="50%" stopColor="#b4bcc9" />
-                <stop offset="75%" stopColor="#4f5666" />
-                <stop offset="100%" stopColor="#252830" />
-              </linearGradient>
-
-              {/* Purple Aurora Gradient for the active flowing trail */}
-              <linearGradient id="purple-aurora-glow" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#4318FF" stopOpacity="0.9" />
-                <stop offset="25%" stopColor="#7047EB" stopOpacity="1" />
-                <stop offset="50%" stopColor="#9D4EDD" stopOpacity="1" />
-                <stop offset="75%" stopColor="#C084FC" stopOpacity="1" />
-                <stop offset="100%" stopColor="#F472B6" stopOpacity="0.95" />
-              </linearGradient>
-
-              {/* Refined Purple Aurora Bloom Filter (crisp 2.5px, not a 70px blob) */}
-              <filter id="purple-aurora-filter" x="-20%" y="-20%" width="140%" height="140%">
-                <feGaussianBlur stdDeviation="2.5" result="softGlow" />
-                <feMerge>
-                  <feMergeNode in="softGlow" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-
-              {/* Bead Pulse Glow */}
-              <filter id="bead-glow" x="-40%" y="-40%" width="180%" height="180%">
-                <feGaussianBlur stdDeviation="3" result="blur" />
-                <feMerge>
-                  <feMergeNode in="blur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-            </defs>
-
-            {/* 1. Outer Metallic Bevel Rail */}
-            <path
-              d={svgPathD}
-              fill="none"
-              stroke="rgba(255, 255, 255, 0.05)"
-              strokeWidth="6"
-              strokeLinecap="round"
-            />
-
-            {/* 2. Metallic Titanium/Chrome Spine Line */}
-            <path
-              d={svgPathD}
-              fill="none"
-              stroke="url(#metallic-chrome)"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              vectorEffect="non-scaling-stroke"
-            />
-
-            {/* 3. Active Illuminated Purple Aurora Trail */}
-            <path
-              ref={activePathRef}
-              d={svgPathD}
-              fill="none"
-              stroke="url(#purple-aurora-glow)"
-              strokeWidth="2.5"
-              filter="url(#purple-aurora-filter)"
-              strokeLinecap="round"
-              pathLength="1"
-              strokeDasharray="1"
-              strokeDashoffset={1 - Math.min(1, Math.max(0, scrollProgress * 1.12))}
+            {/* Bottom node connector point */}
+            <div
+              className="node-point bottom"
               style={{
-                transition: "stroke-dashoffset 0.2s ease-out",
+                position: "absolute",
+                left: "50%",
+                bottom: "-6px",
+                transform: "translateX(-50%) translateZ(10px)",
+                width: "12px",
+                height: "12px",
+                borderRadius: "50%",
+                backgroundColor: activeCardIndex === 0 ? "#c084fc" : "#0a0612",
+                border:
+                  activeCardIndex === 0
+                    ? "2px solid #ffffff"
+                    : "2px solid rgba(255, 255, 255, 0.15)",
+                boxShadow: activeCardIndex === 0 ? "0 0 15px #c084fc" : "none",
+                transition: "all 0.3s ease",
               }}
-              vectorEffect="non-scaling-stroke"
             />
+          </div>
 
-            {/* 4. Animated Flowing Purple Aurora Energy Stream */}
-            <path
-              d={svgPathD}
-              fill="none"
-              stroke="#E879F9"
-              strokeWidth="2"
-              filter="url(#purple-aurora-filter)"
-              strokeLinecap="round"
-              strokeDasharray="10 16"
-              className="animate-aurora-stream"
-              pathLength="1"
-              style={{
-                strokeDashoffset: 1 - Math.min(1, Math.max(0, scrollProgress * 1.12)),
-                opacity: scrollProgress > 0.02 ? 0.85 : 0,
-                transition: "stroke-dashoffset 0.2s ease-out, opacity 0.3s ease",
-              }}
-              vectorEffect="non-scaling-stroke"
-            />
-
-            {/* 5. Glowing Head Bead visibly traveling down the curve to the card */}
-            {beadPos && scrollProgress > 0.02 && (
-              <g transform={`translate(${beadPos.x}, ${beadPos.y})`}>
-                <circle r="14" fill="rgba(192, 132, 252, 0.25)" className="animate-ping" />
-                <circle r="7" fill="none" stroke="#F472B6" strokeWidth="1.5" />
-                <circle r="4" fill="#C084FC" filter="url(#bead-glow)" />
-                <circle r="1.5" fill="#FFFFFF" />
-              </g>
-            )}
-          </svg>
-        </div>
-
-        {/* Checkpoint Stations Along the Trail */}
-        <div className="relative space-y-20 sm:space-y-28">
-          {visibleTracks.map((track, index) => {
-            const isActive = activeNodeIndex === index;
-            const trackLessons = filteredLessons.filter((l) =>
-              l.paths.includes(track.id)
-            );
-            const isAnyChapterActive = trackLessons.some(
-              (l) => l.id === expandedLessonId
-            );
+          {/* Nodes 1..5: Checkpoint Cards (Minimal initial layout per user prompt) */}
+          {TRACKS.map((track, trackIdx) => {
+            const nodeIndex = trackIdx + 1; // 1 to 5
+            const isActive = activeCardIndex === nodeIndex;
+            const dormantRotateY = trackIdx % 2 === 0 ? -6 : 6;
 
             return (
               <div
-                key={`track-station-${track.id}`}
+                key={`checkpoint-${track.id}`}
                 ref={(el) => {
-                  checkpointRefs.current[index] = el;
+                  nodeRefs.current[nodeIndex] = el;
                 }}
-                id={`track-${track.id}`}
-                className="relative max-w-3xl mx-auto px-4"
+                className="relative w-[min(90%,420px)] rounded-2xl p-6 border backdrop-blur-xl transition-all duration-500 select-none group"
+                style={{
+                  background:
+                    "linear-gradient(180deg, rgba(30, 20, 50, 0.85) 0%, rgba(19, 13, 34, 0.98) 100%)",
+                  transformStyle: "preserve-3d",
+                  transform: isActive
+                    ? "rotateX(0deg) rotateY(0deg) translateZ(40px) scale(1.03)"
+                    : `rotateX(15deg) rotateY(${dormantRotateY}deg) translateZ(-40px) scale(0.95)`,
+                  borderColor: isActive
+                    ? "rgba(192, 132, 252, 0.75)"
+                    : "rgba(255, 255, 255, 0.08)",
+                  boxShadow: isActive
+                    ? "0 30px 60px -15px rgba(139, 92, 246, 0.35), 0 0 25px rgba(139, 92, 246, 0.18) inset"
+                    : "0 10px 30px rgba(0, 0, 0, 0.6)",
+                }}
               >
-                {/* Input Connector Port at Top of Card */}
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-20 flex items-center justify-center">
-                  <div
-                    className={`w-6 h-6 rounded-full border-2 transition-all duration-300 flex items-center justify-center shadow-lg ${
-                      isActive
-                        ? "bg-[#180e29] border-[#C084FC] scale-110 shadow-[0_0_16px_#C084FC]"
-                        : "bg-[#0f1117] border-white/20"
-                    }`}
-                  >
+                {/* Top node connector point */}
+                <div
+                  className="node-point top"
+                  style={{
+                    position: "absolute",
+                    left: "50%",
+                    top: "-6px",
+                    transform: "translateX(-50%) translateZ(10px)",
+                    width: "12px",
+                    height: "12px",
+                    borderRadius: "50%",
+                    backgroundColor: isActive ? "#c084fc" : "#0a0612",
+                    border: isActive
+                      ? "2px solid #ffffff"
+                      : "2px solid rgba(255, 255, 255, 0.15)",
+                    boxShadow: isActive ? "0 0 15px #c084fc" : "none",
+                    transition: "all 0.3s ease",
+                  }}
+                />
+
+                {/* ------------------------------------------------------------ */}
+                {/* User Required Card Layout:                                   */}
+                {/* ICONS | Checkpoint                                           */}
+                {/*        TECH name                                             */}
+                {/* [ learn ]                                                    */}
+                {/* short description                                            */}
+                {/* ------------------------------------------------------------ */}
+                <div className="flex items-center justify-between gap-3 mb-2.5">
+                  <div className="flex items-center gap-3.5">
+                    {/* Icon Box */}
                     <div
-                      className={`w-2 h-2 rounded-full transition-colors ${
-                        isActive ? "bg-[#F472B6]" : "bg-white/40"
+                      className={`w-11 h-11 rounded-xl flex items-center justify-center border transition-all duration-300 ${
+                        isActive
+                          ? "bg-purple-950/60 border-purple-400/80 text-purple-300 shadow-[0_0_16px_rgba(168,85,247,0.4)]"
+                          : "bg-white/5 border-white/10 text-purple-400/80 group-hover:border-purple-400/40"
                       }`}
-                    />
+                    >
+                      {track.iconSvg}
+                    </div>
+
+                    {/* Checkpoint & Tech Name */}
+                    <div>
+                      <div className="text-[10px] font-mono uppercase tracking-widest text-purple-400 font-bold">
+                        CHECKPOINT 0{trackIdx + 1}
+                      </div>
+                      <h3 className="font-display text-lg sm:text-xl font-bold text-white tracking-tight">
+                        {track.title}
+                      </h3>
+                    </div>
                   </div>
+
+                  {/* [ Learn → ] Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedTrackForChapters(track);
+                      if (soundEnabledRef.current) playMetallicChime(1.3);
+                    }}
+                    className="px-3.5 py-1.5 rounded-full bg-gradient-to-b from-purple-500/25 to-purple-900/30 border border-purple-400/40 text-xs font-mono font-bold text-purple-200 hover:text-white hover:border-purple-300 hover:shadow-[0_0_16px_rgba(192,132,252,0.4)] active:scale-95 transition-all cursor-pointer"
+                  >
+                    Learn &rarr;
+                  </button>
                 </div>
 
-                {/* Main Checkpoint Card (Compact & Organized) */}
-                <GlassCard
-                  tone="strong"
-                  padding="lg"
-                  className={`relative space-y-5 transition-all duration-400 group rounded-3xl ${
-                    isActive
-                      ? "border-purple-500/70 shadow-[0_0_40px_rgba(168,85,247,0.28)] ring-1 ring-purple-400/40 scale-[1.01]"
-                      : "border-white/10 hover:border-purple-500/30 shadow-2xl"
-                  }`}
-                >
-                  {/* Station Header with Metallic Icon Box & Title */}
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-center gap-3.5">
-                      {/* Metallic 3D-styled Icon Box */}
-                      <div
-                        className={`w-13 h-13 rounded-2xl flex items-center justify-center border transition-all duration-300 relative ${
-                          isActive
-                            ? "bg-[#1f1633] border-purple-400/80 shadow-[0_0_24px_rgba(168,85,247,0.4)] text-purple-300"
-                            : "bg-[#15171e] border-white/10 text-[var(--text-2)] group-hover:border-purple-400/30"
-                        }`}
-                      >
-                        <div className="relative z-10">{track.iconSvg}</div>
-                      </div>
+                {/* Short Description */}
+                <p className="text-xs sm:text-sm text-[var(--text-muted)] leading-relaxed mt-2">
+                  {track.shortInfo}
+                </p>
 
-                      <div className="space-y-0.5">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-mono uppercase tracking-widest font-bold text-purple-400">
-                            CHECKPOINT 0{index + 1}
-                          </span>
-                          <span className="text-white/20">•</span>
-                          <span className="text-[10px] font-mono text-[var(--text-3)]">
-                            {trackLessons.length} Bites
-                          </span>
-                        </div>
-                        <h2 className="font-display text-xl sm:text-2xl font-black text-white tracking-tight">
-                          {track.title}
-                        </h2>
-                      </div>
-                    </div>
-
-                    <Chip v={track.title} tone={track.tone} />
-                  </div>
-
-                  {/* "About this tech" Section */}
-                  <div className="p-4 rounded-2xl bg-purple-950/20 border border-purple-500/20 text-xs sm:text-sm text-[var(--text-2)] leading-relaxed space-y-1">
-                    <div className="text-[11px] font-mono font-bold text-purple-300 uppercase tracking-wider flex items-center gap-2">
-                      <span>💡</span>
-                      <span>About This Tech</span>
-                    </div>
-                    <p>{track.about}</p>
-                  </div>
-
-                  {/* Chapters Inside (Small Boxy Content - Compact, Not Scattered) */}
-                  <div className="space-y-2.5 pt-1">
-                    <div className="flex items-center justify-between text-[11px] font-mono text-[var(--text-3)]">
-                      <span className="uppercase tracking-widest text-purple-300 font-semibold flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
-                        Chapters in this Station
-                      </span>
-                      <span>Click a chapter to explore</span>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                      {trackLessons.map((lesson) => {
-                        const isExpanded = expandedLessonId === lesson.id;
-                        return (
-                          <button
-                            key={lesson.id}
-                            type="button"
-                            onClick={() => {
-                              const next = isExpanded ? null : lesson.id;
-                              setExpandedLessonId(next);
-                              if (soundEnabled) playMetallicChime(isExpanded ? 1.0 : 1.3);
-                            }}
-                            className={`p-3 rounded-xl border text-left flex items-center justify-between gap-3 transition-all cursor-pointer ${
-                              isExpanded
-                                ? "bg-purple-950/40 border-purple-400 shadow-[0_0_20px_rgba(168,85,247,0.3)] ring-1 ring-purple-400 text-white"
-                                : "bg-[#111318]/90 border-white/10 hover:border-purple-400/40 hover:bg-[#181a22] text-[var(--text-2)]"
-                            }`}
-                          >
-                            <div className="flex items-center gap-2.5 min-w-0">
-                              <span className="text-base shrink-0">
-                                {getLessonIcon(lesson.id)}
-                              </span>
-                              <div className="min-w-0">
-                                <div className="font-ui text-xs font-semibold text-white truncate">
-                                  {lesson.title}
-                                </div>
-                                <div className="text-[10px] font-mono text-[var(--text-3)] flex items-center gap-2 mt-0.5">
-                                  <span>15m bite</span>
-                                  <span>•</span>
-                                  <span className="text-emerald-400">+{lesson.xpAward} XP</span>
-                                </div>
-                              </div>
-                            </div>
-
-                            <span
-                              className={`text-xs font-mono text-purple-400 shrink-0 transition-transform duration-200 ${
-                                isExpanded ? "rotate-180" : ""
-                              }`}
-                            >
-                              ▾
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Expanded Chapter Content in Card Form (Revealed On-Demand) */}
-                  {expandedLesson && isAnyChapterActive && (
-                    <div className="mt-4 p-5 rounded-2xl bg-[#0e1017]/95 border border-purple-500/40 shadow-[0_0_30px_rgba(168,85,247,0.2)] space-y-4 animate-fadeIn">
-                      {/* Active Chapter Header */}
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-base">
-                              {getLessonIcon(expandedLesson.id)}
-                            </span>
-                            <span className="text-xs font-mono font-bold text-purple-300 uppercase tracking-wider">
-                              Active Chapter Focus
-                            </span>
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                              +{expandedLesson.xpAward} XP
-                            </span>
-                          </div>
-                          <h3 className="font-display text-lg font-bold text-white">
-                            {expandedLesson.title}
-                          </h3>
-                        </div>
-
-                        {/* ELI5 Switch */}
-                        <button
-                          type="button"
-                          onClick={() => toggleCardEli5(expandedLesson.id)}
-                          className={`px-3 py-1.5 rounded-full border text-xs font-mono font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
-                            (cardEli5State[expandedLesson.id] ?? globalEli5)
-                              ? "bg-[#FFB547]/20 border-[#FFB547] text-[#FFB547] shadow-[0_0_12px_rgba(255,181,71,0.3)]"
-                              : "bg-[#181a22] border-white/10 text-[var(--text-3)] hover:text-white"
-                          }`}
-                        >
-                          <span>
-                            {(cardEli5State[expandedLesson.id] ?? globalEli5)
-                              ? "👶 ELI5"
-                              : "💡 Tech"}
-                          </span>
-                        </button>
-                      </div>
-
-                      {/* Content: Outcome or ELI5 Metaphor */}
-                      {(cardEli5State[expandedLesson.id] ?? globalEli5) ? (
-                        <div className="p-3.5 rounded-xl bg-[#FFB547]/10 border border-[#FFB547]/30 text-xs sm:text-sm text-[#FFB547] leading-relaxed">
-                          <span className="font-bold mr-1.5">👶 ELI5 Metaphor:</span>
-                          {expandedLesson.eli5 || expandedLesson.outcome}
-                        </div>
-                      ) : (
-                        <p className="font-ui text-xs sm:text-sm text-[var(--text-2)] leading-relaxed">
-                          {expandedLesson.outcome}
-                        </p>
-                      )}
-
-                      {/* 5 Short Stages Indicator */}
-                      <div className="pt-2 border-t border-white/10 space-y-2">
-                        <div className="flex items-center justify-between text-[11px] font-mono text-[var(--text-3)]">
-                          <span className="uppercase tracking-wider font-semibold text-purple-300">
-                            5 Short Stages (15 Min Total)
-                          </span>
-                          <span>Interactive Step Progression</span>
-                        </div>
-                        <div className="grid grid-cols-5 gap-1.5 text-center text-[10px] font-mono">
-                          <div className="py-1.5 px-1 rounded-lg bg-white/5 border border-white/10 text-slate-300">
-                            1. Why
-                          </div>
-                          <div className="py-1.5 px-1 rounded-lg bg-white/5 border border-white/10 text-slate-300">
-                            2. Model
-                          </div>
-                          <div className="py-1.5 px-1 rounded-lg bg-white/5 border border-white/10 text-slate-300">
-                            3. See
-                          </div>
-                          <div className="py-1.5 px-1 rounded-lg bg-white/5 border border-white/10 text-slate-300">
-                            4. Try
-                          </div>
-                          <div className="py-1.5 px-1 rounded-lg bg-white/5 border border-white/10 text-slate-300">
-                            5. Recall
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Action Footer */}
-                      <div className="pt-2 flex items-center justify-between gap-3 border-t border-white/10">
-                        <span className="text-[11px] font-mono text-[var(--text-3)]">
-                          {expandedLesson.prerequisites.length > 0
-                            ? `Prereq: ${expandedLesson.prerequisites[0]}`
-                            : "No prerequisites required"}
-                        </span>
-
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setExpandedLessonId(null)}
-                            className="px-3 py-1.5 rounded-full border border-white/10 text-xs font-mono text-[var(--text-3)] hover:text-white hover:bg-white/5 transition-all cursor-pointer"
-                          >
-                            ▲ Collapse
-                          </button>
-
-                          <Button
-                            variant="primary"
-                            size="sm"
-                            href={`/m3/lesson/${expandedLesson.id}`}
-                            className="shadow-[0_0_18px_rgba(168,85,247,0.4)]"
-                          >
-                            Start 15-Min Bite &rarr;
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </GlassCard>
-
-                {/* Output Connector Port at Bottom of Card */}
-                <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center justify-center">
-                  <div
-                    className={`w-6 h-6 rounded-full border-2 transition-all duration-300 flex items-center justify-center shadow-lg ${
-                      isActive
-                        ? "bg-[#180e29] border-[#C084FC] shadow-[0_0_14px_#C084FC]"
-                        : "bg-[#0f1117] border-white/20"
-                    }`}
-                  >
-                    <div
-                      className={`w-2 h-2 rounded-full transition-colors ${
-                        isActive ? "bg-[#F472B6]" : "bg-white/40"
-                      }`}
-                    />
-                  </div>
-                </div>
+                {/* Bottom node connector point */}
+                <div
+                  className="node-point bottom"
+                  style={{
+                    position: "absolute",
+                    left: "50%",
+                    bottom: "-6px",
+                    transform: "translateX(-50%) translateZ(10px)",
+                    width: "12px",
+                    height: "12px",
+                    borderRadius: "50%",
+                    backgroundColor: isActive ? "#c084fc" : "#0a0612",
+                    border: isActive
+                      ? "2px solid #ffffff"
+                      : "2px solid rgba(255, 255, 255, 0.15)",
+                    boxShadow: isActive ? "0 0 15px #c084fc" : "none",
+                    transition: "all 0.3s ease",
+                  }}
+                />
               </div>
             );
           })}
         </div>
 
-        {/* Trail Terminus at Bottom */}
-        <div className="flex flex-col items-center justify-center space-y-4 pt-20 pb-8 text-center">
-          <div className="w-10 h-10 rounded-2xl border border-purple-500/40 bg-[#0d0e14] flex items-center justify-center shadow-[0_0_20px_rgba(168,85,247,0.3)]">
-            <span className="text-lg">🎯</span>
+        {/* Trail Terminus Footer */}
+        <div className="flex flex-col items-center justify-center space-y-3 pt-24 text-center">
+          <div className="w-9 h-9 rounded-xl border border-purple-500/40 bg-[#0d0e14] flex items-center justify-center shadow-[0_0_20px_rgba(168,85,247,0.3)]">
+            <span className="text-base">🎯</span>
           </div>
           <div className="space-y-1 max-w-sm">
-            <h3 className="font-display text-lg font-bold text-white">
-              Curriculum Complete
-            </h3>
-            <p className="font-ui text-xs text-[var(--text-3)]">
-              You&apos;ve explored the curriculum checkpoints. Open the Spaced
-              Repetition queue to lock in your active recall.
+            <h4 className="font-display text-base font-bold text-white">Curriculum Complete</h4>
+            <p className="font-ui text-xs text-[var(--text-muted)]">
+              You&apos;ve tracked all checkpoints. Enter the Spaced Repetition queue to lock in
+              mastery.
             </p>
           </div>
           <Link
             href="/m3/retest"
-            className="px-5 py-2 rounded-full bg-[var(--accent-grad)] text-white text-xs font-mono font-bold shadow-[0_0_20px_rgba(94,78,240,0.4)] hover:brightness-110 transition-all"
+            className="px-4 py-2 rounded-full bg-[var(--accent-grad)] text-white text-xs font-mono font-bold shadow-[0_0_20px_rgba(168,85,247,0.4)] hover:brightness-110 transition-all"
           >
             Open Retest Queue (SM-2) &rarr;
           </Link>
@@ -998,18 +743,141 @@ export default function Module3DiscoveryPage() {
       </div>
 
       {/* -------------------------------------------------------------------- */}
-      {/* 4. Floating "Ask Gemini" Pill & Quick Jump                           */}
+      {/* 3. Floating "Ask Gemini" Pill                                        */}
       {/* -------------------------------------------------------------------- */}
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
         <button
           type="button"
           onClick={() => setGeminiModalOpen(true)}
-          className="px-5 py-2.5 rounded-full bg-[#16181d]/90 backdrop-blur-xl border border-[#2a2d35] hover:border-purple-400 text-xs font-mono font-semibold text-white flex items-center gap-2.5 shadow-[0_12px_32px_rgba(0,0,0,0.6)] hover:scale-105 transition-all cursor-pointer group"
+          className="px-5 py-2.5 rounded-full bg-[#16181d]/90 backdrop-blur-xl border border-white/10 hover:border-purple-400 text-xs font-mono font-semibold text-white flex items-center gap-2.5 shadow-[0_12px_32px_rgba(0,0,0,0.6)] hover:scale-105 transition-all cursor-pointer group"
         >
           <span className="w-2 h-2 rounded-full bg-purple-400 shadow-[0_0_8px_#C084FC] group-hover:scale-125 transition-transform" />
           <span>Ask Gemini</span>
         </button>
       </div>
+
+      {/* -------------------------------------------------------------------- */}
+      {/* 4. Focused Chapter Drawer/Modal for the Selected Track                */}
+      {/* -------------------------------------------------------------------- */}
+      {selectedTrackForChapters && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fadeIn"
+          onClick={() => setSelectedTrackForChapters(null)}
+        >
+          <div
+            className="w-full max-w-lg rounded-2xl border border-purple-500/30 bg-[#120d22]/95 p-6 space-y-5 shadow-2xl relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-start justify-between gap-3 border-b border-white/10 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-purple-500/15 border border-purple-400/40 flex items-center justify-center text-purple-300">
+                  {selectedTrackForChapters.iconSvg}
+                </div>
+                <div>
+                  <div className="text-[10px] font-mono uppercase tracking-widest text-purple-400 font-bold">
+                    15-MINUTE BITES
+                  </div>
+                  <h3 className="font-display text-xl font-bold text-white">
+                    {selectedTrackForChapters.title}
+                  </h3>
+                </div>
+              </div>
+
+              {/* ELI5 Switch + Close */}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModalEli5(!modalEli5);
+                    if (soundEnabledRef.current) playMetallicChime(1.3);
+                  }}
+                  className={`px-3 py-1 rounded-full border text-xs font-mono font-semibold transition-all cursor-pointer ${
+                    modalEli5
+                      ? "bg-[#FFB547]/20 border-[#FFB547] text-[#FFB547]"
+                      : "bg-white/5 border-white/15 text-white/60 hover:text-white"
+                  }`}
+                >
+                  {modalEli5 ? "👶 ELI5" : "💡 Tech"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedTrackForChapters(null)}
+                  className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Chapters List */}
+            <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+              {modalLessons.map((lesson) => (
+                <div
+                  key={lesson.id}
+                  className="p-4 rounded-xl border border-white/10 bg-white/[0.03] hover:border-purple-400/40 hover:bg-white/[0.06] transition-all space-y-2.5"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-base">{getLessonIcon(lesson.id)}</span>
+                        <h4 className="font-ui text-sm font-bold text-white">{lesson.title}</h4>
+                      </div>
+                      <div className="text-[10px] font-mono text-[var(--text-muted)] flex items-center gap-2">
+                        <span>15m bite</span>
+                        <span>•</span>
+                        <span className="text-emerald-400">+{lesson.xpAward} XP</span>
+                        {lesson.prerequisites.length > 0 && (
+                          <>
+                            <span>•</span>
+                            <span>Prereq: {lesson.prerequisites[0]}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    <Link
+                      href={`/m3/lesson/${lesson.id}`}
+                      className="shrink-0 px-3 py-1.5 rounded-full bg-purple-500/20 border border-purple-400/40 text-xs font-mono font-bold text-purple-200 hover:text-white hover:bg-purple-500/30 transition-all shadow-[0_0_12px_rgba(168,85,247,0.3)]"
+                    >
+                      Start &rarr;
+                    </Link>
+                  </div>
+
+                  {/* Outcome or ELI5 Metaphor */}
+                  <div className="text-xs text-[var(--text-muted)] leading-relaxed">
+                    {modalEli5 ? (
+                      <div className="p-2.5 rounded-lg bg-[#FFB547]/10 border border-[#FFB547]/30 text-[#FFB547]">
+                        <span className="font-bold mr-1">👶 ELI5:</span>
+                        {lesson.eli5 || lesson.outcome}
+                      </div>
+                    ) : (
+                      <p>{lesson.outcome}</p>
+                    )}
+                  </div>
+
+                  {/* 5 Stages indicator */}
+                  <div className="flex items-center gap-1.5 pt-1 text-[9px] font-mono text-white/40">
+                    <span className="text-purple-300 font-semibold">5 Stages:</span>
+                    <span>1. Why</span>
+                    <span>&rarr;</span>
+                    <span>2. Model</span>
+                    <span>&rarr;</span>
+                    <span>3. See</span>
+                    <span>&rarr;</span>
+                    <span>4. Try</span>
+                    <span>&rarr;</span>
+                    <span>5. Recall</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* -------------------------------------------------------------------- */}
       {/* 5. Ask Gemini Modal Dialog                                           */}
@@ -1022,51 +890,47 @@ export default function Module3DiscoveryPage() {
           onClick={() => setGeminiModalOpen(false)}
         >
           <div
-            className="w-full max-w-lg rounded-2xl border border-[var(--border-strong)] bg-[var(--bg-base)] p-6 space-y-4 shadow-2xl relative"
+            className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#120d22] p-6 space-y-4 shadow-2xl relative"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
+            <div className="flex items-center justify-between pb-3 border-b border-white/10">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-purple-400 shadow-[0_0_8px_#C084FC]" />
-                <h3 className="font-display text-lg font-bold text-[var(--text)]">
+                <h3 className="font-display text-lg font-bold text-white">
                   Ask Gemini · Tech Bites Curriculum
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setGeminiModalOpen(false)}
-                className="text-[var(--text-3)] hover:text-[var(--text)] font-mono text-sm cursor-pointer"
+                className="text-white/60 hover:text-white font-mono text-sm cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
-            <div className="space-y-3 font-ui text-sm text-[var(--text-2)] leading-relaxed">
+            <div className="space-y-3 font-ui text-sm text-[var(--text-muted)] leading-relaxed">
               <p>
-                <strong>Welcome to 15-Minute Tech Bites!</strong> Each bite is
-                engineered to build an interview-ready mental model through 5
-                active stages without lecture fatigue.
+                <strong>Welcome to 15-Minute Tech Bites!</strong> Each bite builds an
+                interview-ready mental model through 5 active stages without lecture fatigue.
               </p>
-              <div className="p-3 rounded-xl bg-[var(--glass-subtle)] border border-[var(--border)] space-y-2 text-xs font-mono">
-                <div className="text-purple-300 font-bold">
-                  Recommended Learning Trajectory:
-                </div>
-                <ul className="space-y-1 list-disc list-inside text-[var(--text)]">
+              <div className="p-3 rounded-xl bg-purple-950/30 border border-purple-500/20 space-y-2 text-xs font-mono">
+                <div className="text-purple-300 font-bold">Recommended Learning Trajectory:</div>
+                <ul className="space-y-1 list-disc list-inside text-white/90">
                   <li>
-                    <strong>AI Engineers:</strong> RAG Pipeline → LLM Basics → Tokens & BPE → Vector Embeddings
+                    <strong>AI Engineers:</strong> RAG Pipeline → LLM Basics → Tokens & BPE → Vector
+                    Embeddings
                   </li>
                   <li>
-                    <strong>Backend Engineers:</strong> Caching & Cache-Aside → HTTP/REST Idempotency → Docker Containers
+                    <strong>Backend Engineers:</strong> Caching & Cache-Aside → HTTP/REST
+                    Idempotency → Docker Containers
                   </li>
                   <li>
-                    <strong>DevOps & Cloud:</strong> Docker Namespaces/Cgroups → CI/CD Canary Deployments
+                    <strong>DevOps & Cloud:</strong> Docker Namespaces/Cgroups → CI/CD Canary
+                    Deployments
                   </li>
                 </ul>
               </div>
-              <p className="text-xs text-[var(--text-3)]">
-                Pro Tip: Toggle the <strong>👶 ELI5</strong> switch on any card to
-                unlock the simplified 5-year-old metaphor before diving into code!
-              </p>
             </div>
 
             <div className="pt-2 flex justify-end">
