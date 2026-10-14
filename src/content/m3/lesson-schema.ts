@@ -93,6 +93,7 @@ export const LessonSchema = z.object({
   reference: LessonReferenceSchema,
   retestChallenges: LessonRetestSchema.optional(),
   xpAward: z.number().int().default(50),
+  eli5: z.string().optional(),
 });
 export type Lesson = z.infer<typeof LessonSchema>;
 
