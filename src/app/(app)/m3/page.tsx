@@ -9,12 +9,13 @@ import { getAllLessons } from "@/content/m3/lessons";
 import { Lesson, LessonPath } from "@/content/m3/lesson-schema";
 
 // ---------------------------------------------------------------------------
-// Tracks metadata with distinctive Aurora tones & icons
+// Tracks metadata with distinctive Aurora tones, icons, and tech descriptions
 // ---------------------------------------------------------------------------
 interface TrackMeta {
   id: LessonPath;
   title: string;
   subtitle: string;
+  about: string;
   tone: ChipTone;
   accentHex: string;
   gradient: string;
@@ -26,9 +27,11 @@ const TRACKS: TrackMeta[] = [
     id: "ai",
     title: "AI & LLM Systems",
     subtitle: "RAG architectures, autoregressive sampling, context windows & vector geometry",
+    about:
+      "Foundational architectures powering modern AI applications. Learn how transformer decoders generate autoregressive text, how subword tokenization bounds memory, how dense vector embeddings map semantic intent, and how retrieval-augmented generation (RAG) grounds models in verified truth without fine-tuning.",
     tone: "accent",
-    accentHex: "#2BB7FF",
-    gradient: "from-[#2BB7FF] to-[#8B7CFF]",
+    accentHex: "#8B7CFF",
+    gradient: "from-[#8B7CFF] to-[#C084FC]",
     iconSvg: (
       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -39,9 +42,11 @@ const TRACKS: TrackMeta[] = [
     id: "backend",
     title: "Backend & Distributed Systems",
     subtitle: "Cache-aside strategies, HTTP safe/idempotent semantics & load shedding",
+    about:
+      "Resilient, high-throughput backend infrastructure. Master distributed cache-aside patterns, cache stampede prevention, idempotent HTTP/REST semantics for financial APIs, and graceful degradation under concurrent load.",
     tone: "tint1",
-    accentHex: "#8B7CFF",
-    gradient: "from-[#8B7CFF] to-[#E056FD]",
+    accentHex: "#A855F7",
+    gradient: "from-[#A855F7] to-[#E056FD]",
     iconSvg: (
       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
@@ -52,6 +57,8 @@ const TRACKS: TrackMeta[] = [
     id: "frontend",
     title: "Frontend Architecture",
     subtitle: "Client-server contracts, optimistic updates & state caching semantics",
+    about:
+      "Robust client-server contracts and high-performance UI systems. Learn HTTP idempotency semantics, safe vs mutating verbs, optimistic updates, and cache synchronization between browser and distributed servers.",
     tone: "tint2",
     accentHex: "#FFB547",
     gradient: "from-[#FFB547] to-[#FF7675]",
@@ -65,6 +72,8 @@ const TRACKS: TrackMeta[] = [
     id: "devops",
     title: "DevOps & Cloud",
     subtitle: "Linux namespaces, cgroups containerization & zero-downtime Canary CI/CD",
+    about:
+      "Cloud-native isolation and automated deployment pipelines. Master Linux kernel primitives (Namespaces & cgroups) that power Docker containers, multi-stage image optimization, and zero-downtime Canary vs Blue-Green delivery strategies.",
     tone: "tint4",
     accentHex: "#2EE6C5",
     gradient: "from-[#2EE6C5] to-[#00CEC9]",
@@ -78,6 +87,8 @@ const TRACKS: TrackMeta[] = [
     id: "foundations",
     title: "Core CS Foundations",
     subtitle: "Subword BPE encodings, high-dimensional vector math & memory hierarchies",
+    about:
+      "The enduring theoretical primitives beneath all modern stacks. Explore Byte-Pair Encoding algorithms, high-dimensional vector spaces, memory caching hierarchies, and state machine idempotency.",
     tone: "tint3",
     accentHex: "#FF6584",
     gradient: "from-[#FF6584] to-[#FDA7DF]",
@@ -88,6 +99,30 @@ const TRACKS: TrackMeta[] = [
     ),
   },
 ];
+
+// Helper to provide distinctive icons for chapter buttons
+function getLessonIcon(lessonId: string): string {
+  switch (lessonId) {
+    case "rag-pipeline":
+      return "⚡";
+    case "llm-basics":
+      return "🧠";
+    case "tokens-context":
+      return "🔢";
+    case "embeddings-similarity":
+      return "🌐";
+    case "caching-fundamentals":
+      return "💾";
+    case "http-rest":
+      return "🔌";
+    case "docker-containers":
+      return "🐳";
+    case "cicd-pipelines":
+      return "🚀";
+    default:
+      return "⚡";
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Web Audio API: Zero-Asset Synthesized Metallic Chime
@@ -170,15 +205,19 @@ export default function Module3DiscoveryPage() {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [globalEli5, setGlobalEli5] = useState(false);
   const [cardEli5State, setCardEli5State] = useState<Record<string, boolean>>({});
+  const [expandedLessonId, setExpandedLessonId] = useState<string | null>(null);
   const [activeNodeIndex, setActiveNodeIndex] = useState<number>(-1);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [geminiModalOpen, setGeminiModalOpen] = useState(false);
   const [svgPathD, setSvgPathD] = useState<string>("");
+  const [containerWidthPx, setContainerWidthPx] = useState(1000);
   const [containerHeightPx, setContainerHeightPx] = useState(2400);
+  const [beadPos, setBeadPos] = useState<{ x: number; y: number } | null>(null);
 
   // Refs for scrollytelling path calculation
   const trailContainerRef = useRef<HTMLDivElement>(null);
-  const nodeRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const checkpointRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const activePathRef = useRef<SVGPathElement>(null);
   const prevActiveNodeRef = useRef<number>(-1);
 
   // Load sound setting from localStorage
@@ -229,84 +268,68 @@ export default function Module3DiscoveryPage() {
     return matchesPath && matchesSearch;
   });
 
-  // Build trail items: grouping lessons by track or alternating sequentially
-  const trailItems: Array<
-    | { type: "track"; track: TrackMeta }
-    | { type: "lesson"; lesson: Lesson; track: TrackMeta; indexInTrack: number }
-  > = [];
-
-  const visibleTracks =
+  // Checkpoints: The Track Stations along the path
+  const visibleTracks = (
     selectedPath === "all"
       ? TRACKS
-      : TRACKS.filter((t) => t.id === selectedPath);
-
-  visibleTracks.forEach((track) => {
-    const trackLessons = filteredLessons.filter((l) =>
+      : TRACKS.filter((t) => t.id === selectedPath)
+  ).filter((track) => {
+    const lessonsInTrack = filteredLessons.filter((l) =>
       l.paths.includes(track.id)
     );
-    if (trackLessons.length > 0 || selectedPath !== "all") {
-      trailItems.push({ type: "track", track });
-      trackLessons.forEach((lesson, idx) => {
-        trailItems.push({
-          type: "lesson",
-          lesson,
-          track,
-          indexInTrack: idx,
-        });
-      });
-    }
+    return lessonsInTrack.length > 0 || selectedPath !== "all";
   });
 
-  // Dynamic SVG wavy S-curve calculation based on real DOM node coordinates
+  // Dynamic SVG Metallic Spline Calculation based on real DOM checkpoints
   useEffect(() => {
     const calculatePath = () => {
       if (!trailContainerRef.current) return;
       const containerRect = trailContainerRef.current.getBoundingClientRect();
+      const width = Math.max(containerRect.width, 320);
       const height = Math.max(containerRect.height, 1200);
+      setContainerWidthPx(width);
       setContainerHeightPx(height);
 
-      const isDesktop = window.innerWidth >= 768;
       const points: Array<{ x: number; y: number }> = [];
 
-      // Starting point at top center
-      points.push({ x: 50, y: 0 });
+      // 1. Origin point at top center (null)
+      points.push({ x: width / 2, y: 0 });
 
-      nodeRefs.current.forEach((el, idx) => {
+      // 2. Waypoints through each checkpoint card
+      checkpointRefs.current.forEach((el, idx) => {
         if (!el) return;
         const elRect = el.getBoundingClientRect();
-        const relativeY = elRect.top - containerRect.top + elRect.height / 2;
-        const item = trailItems[idx];
-        const isTrack = item?.type === "track";
+        const topY = elRect.top - containerRect.top;
+        const bottomY = elRect.bottom - containerRect.top;
 
-        let x = 50;
-        if (!isTrack && isDesktop && item && item.type === "lesson") {
-          // Lessons alternate left (28%) and right (72%) on desktop
-          const isLeft = item.indexInTrack % 2 === 0;
-          x = isLeft ? 28 : 72;
-        } else if (!isTrack && !isDesktop && item && item.type === "lesson") {
-          // Subtle wave on mobile (44% and 56%)
-          const isLeft = item.indexInTrack % 2 === 0;
-          x = isLeft ? 44 : 56;
-        }
-
-        points.push({ x, y: relativeY });
+        // Enter connector at top of card
+        points.push({ x: width / 2, y: topY });
+        // Exit connector at bottom of card
+        points.push({ x: width / 2, y: bottomY });
       });
 
-      // Terminal point at bottom center
-      points.push({ x: 50, y: height });
+      // 3. Terminus point at bottom center
+      points.push({ x: width / 2, y: height });
 
       if (points.length < 2) return;
 
-      // Construct smooth continuous cubic Bezier spline
+      // Construct smooth continuous cubic Bezier spline with gentle metallic curvature
       let d = `M ${points[0].x.toFixed(1)},${points[0].y.toFixed(1)}`;
+
       for (let i = 1; i < points.length; i++) {
         const p0 = points[i - 1];
         const p1 = points[i];
         const dy = p1.y - p0.y;
 
-        const cp1x = p0.x;
+        // For segments between cards, sweep with a graceful curved arc
+        const isInterCardSegment = i % 2 === 1 && i > 0 && i < points.length - 1;
+        const sweep = isInterCardSegment
+          ? (i % 4 === 1 ? 40 : -40)
+          : 0;
+
+        const cp1x = p0.x + sweep;
         const cp1y = p0.y + dy * 0.45;
-        const cp2x = p1.x;
+        const cp2x = p1.x + sweep;
         const cp2y = p1.y - dy * 0.45;
 
         d += ` C ${cp1x.toFixed(1)},${cp1y.toFixed(1)} ${cp2x.toFixed(1)},${cp2y.toFixed(1)} ${p1.x.toFixed(1)},${p1.y.toFixed(1)}`;
@@ -322,9 +345,9 @@ export default function Module3DiscoveryPage() {
       window.removeEventListener("resize", calculatePath);
       clearTimeout(timer);
     };
-  }, [trailItems, selectedPath]);
+  }, [visibleTracks.length, expandedLessonId]);
 
-  // Scroll tracking & metallic chime trigger (plays both scrolling downwards & upwards)
+  // Scroll tracking & metallic chime trigger
   const handleScroll = useCallback(() => {
     if (!trailContainerRef.current) return;
     const container = trailContainerRef.current;
@@ -337,12 +360,24 @@ export default function Module3DiscoveryPage() {
     const progress = Math.max(0, Math.min(1, currentDistance / totalDistance));
     setScrollProgress(progress);
 
-    // Identify which node is currently near the center trigger line
+    // Update bead coordinate along the active path
+    if (activePathRef.current) {
+      try {
+        const pathLen = activePathRef.current.getTotalLength();
+        const clampedProgress = Math.min(1, Math.max(0, progress * 1.12));
+        const pt = activePathRef.current.getPointAtLength(clampedProgress * pathLen);
+        setBeadPos({ x: pt.x, y: pt.y });
+      } catch {
+        // Fallback
+      }
+    }
+
+    // Identify which checkpoint is currently near the center trigger line
     const triggerY = windowHeight * 0.45;
     let closestIndex = -1;
     let closestDistance = Infinity;
 
-    nodeRefs.current.forEach((el, index) => {
+    checkpointRefs.current.forEach((el, index) => {
       if (!el) return;
       const elRect = el.getBoundingClientRect();
       const elCenter = elRect.top + elRect.height / 2;
@@ -358,8 +393,8 @@ export default function Module3DiscoveryPage() {
       setActiveNodeIndex(closestIndex);
       prevActiveNodeRef.current = closestIndex;
       if (soundEnabled) {
-        // Metallic chime pitch changes melodically as you advance down or up the trail
-        const pitch = 0.95 + ((closestIndex % 6) * 0.08);
+        // Metallic chime pitch changes harmonically as you advance down the checkpoints
+        const pitch = 0.95 + (closestIndex % 5) * 0.09;
         playMetallicChime(pitch);
       }
     }
@@ -369,18 +404,35 @@ export default function Module3DiscoveryPage() {
     window.addEventListener("scroll", handleScroll, { passive: true });
     handleScroll();
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [handleScroll, trailItems.length]);
+  }, [handleScroll, visibleTracks.length, expandedLessonId]);
+
+  const expandedLesson = expandedLessonId ? allLessons.find((l) => l.id === expandedLessonId) : null;
 
   return (
-    <div className="relative min-h-screen py-4 max-w-6xl mx-auto space-y-8 select-none">
+    <div className="relative min-h-screen py-4 max-w-5xl mx-auto space-y-8 select-none">
+      {/* Inline styles for the smooth purple aurora flow along the metallic path */}
+      <style jsx global>{`
+        @keyframes purpleAuroraFlow {
+          from {
+            stroke-dashoffset: 0;
+          }
+          to {
+            stroke-dashoffset: -48;
+          }
+        }
+        .animate-aurora-stream {
+          animation: purpleAuroraFlow 3.2s linear infinite;
+        }
+      `}</style>
+
       {/* -------------------------------------------------------------------- */}
       {/* 1. Header Bar: Minimal, Spacious & Elegant (No Clutter)              */}
       {/* -------------------------------------------------------------------- */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-[var(--border)]">
         <div className="space-y-3">
           <div className="flex items-center gap-2.5">
-            <span className="w-2 h-2 rounded-full bg-[var(--accent-bright)] shadow-[0_0_10px_var(--accent-bright)] animate-pulse" />
-            <span className="text-xs font-mono tracking-widest text-[var(--accent-bright)] uppercase font-semibold">
+            <span className="w-2 h-2 rounded-full bg-purple-400 shadow-[0_0_10px_#A855F7] animate-pulse" />
+            <span className="text-xs font-mono tracking-widest text-purple-300 uppercase font-semibold">
               Module III · 15-Minute Tech Bites
             </span>
           </div>
@@ -390,25 +442,24 @@ export default function Module3DiscoveryPage() {
           </h1>
 
           <p className="font-ui text-sm sm:text-base text-[var(--text-2)] max-w-2xl leading-relaxed">
-            Scroll the trail, choose a track, then open any topic. Every lesson
-            has five short stages and a switch that explains it like you are
-            five.
+            Scroll the metallic trail from origin. Explore each tech checkpoint,
+            open boxy chapters on-demand, and toggle ELI5 to build intuition.
           </p>
         </div>
 
-        {/* Global Controls: Sound Toggle (Image 4) + Retest Queue + Global ELI5 */}
+        {/* Global Controls: Sound Toggle + Global ELI5 + Retest Queue */}
         <div className="flex flex-wrap items-center gap-3 shrink-0">
-          {/* Sound Toggle Button (Matches Image 4 Top-Right Button) */}
+          {/* Sound Toggle Button */}
           <button
             type="button"
             onClick={toggleSound}
             aria-label={soundEnabled ? "Mute metallic sounds" : "Enable metallic sounds"}
-            className="px-3.5 py-1.5 rounded-full border text-xs font-mono font-medium flex items-center gap-2 bg-[#121316]/80 border-[#2a2d35] hover:border-[var(--accent-bright)] transition-all cursor-pointer shadow-md"
+            className="px-3.5 py-1.5 rounded-full border text-xs font-mono font-medium flex items-center gap-2 bg-[#121316]/80 border-[#2a2d35] hover:border-purple-400 transition-all cursor-pointer shadow-md"
           >
             <span
               className={`w-2 h-2 rounded-full transition-all ${
                 soundEnabled
-                  ? "bg-[#2EE6C5] shadow-[0_0_8px_#2EE6C5]"
+                  ? "bg-purple-400 shadow-[0_0_8px_#C084FC]"
                   : "bg-[#565c69]"
               }`}
             />
@@ -452,7 +503,7 @@ export default function Module3DiscoveryPage() {
       {/* -------------------------------------------------------------------- */}
       {/* 2. Sticky Track Filter Bar & Search                                  */}
       {/* -------------------------------------------------------------------- */}
-      <div className="sticky top-16 z-30 py-2.5 px-4 rounded-2xl bg-[var(--bg-base)]/85 backdrop-blur-xl border border-[var(--border)] flex flex-col md:flex-row items-center justify-between gap-3 shadow-lg">
+      <div className="sticky top-16 z-30 py-2.5 px-4 rounded-2xl bg-[var(--bg-base)]/90 backdrop-blur-xl border border-[var(--border)] flex flex-col md:flex-row items-center justify-between gap-3 shadow-xl">
         {/* Track Pills */}
         <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto scrollbar-none py-1">
           <button
@@ -461,13 +512,13 @@ export default function Module3DiscoveryPage() {
               setSelectedPath("all");
               if (soundEnabled) playMetallicChime(1.0);
             }}
-            className={`px-3 py-1.5 rounded-full text-xs font-mono font-semibold whitespace-nowrap transition-all cursor-pointer ${
+            className={`px-3.5 py-1.5 rounded-full text-xs font-mono font-semibold whitespace-nowrap transition-all cursor-pointer ${
               selectedPath === "all"
-                ? "bg-[var(--accent-grad)] text-white shadow-[0_0_12px_rgba(94,78,240,0.5)]"
+                ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-[0_0_14px_rgba(168,85,247,0.45)]"
                 : "bg-[var(--glass-subtle)] text-[var(--text-2)] hover:text-[var(--text)] border border-[var(--border)]"
             }`}
           >
-            All Tracks ({allLessons.length})
+            All Tracks ({TRACKS.length})
           </button>
 
           {TRACKS.map((t) => {
@@ -481,9 +532,9 @@ export default function Module3DiscoveryPage() {
                   setSelectedPath(t.id);
                   if (soundEnabled) playMetallicChime(1.15);
                 }}
-                className={`px-3 py-1.5 rounded-full text-xs font-mono font-semibold whitespace-nowrap flex items-center gap-1.5 transition-all cursor-pointer ${
+                className={`px-3.5 py-1.5 rounded-full text-xs font-mono font-semibold whitespace-nowrap flex items-center gap-1.5 transition-all cursor-pointer ${
                   isSelected
-                    ? "bg-[var(--accent-grad)] text-white shadow-[0_0_12px_rgba(94,78,240,0.5)]"
+                    ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-[0_0_14px_rgba(168,85,247,0.45)]"
                     : "bg-[var(--glass-subtle)] text-[var(--text-2)] hover:text-[var(--text)] border border-[var(--border)]"
                 }`}
               >
@@ -501,7 +552,7 @@ export default function Module3DiscoveryPage() {
             placeholder="Search RAG, Cache, Docker..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-8 pr-3 py-1.5 rounded-full border border-[var(--border)] bg-[var(--glass-subtle)] text-xs text-[var(--text)] placeholder-[var(--text-3)] focus:outline-none focus:border-[var(--accent-bright)]"
+            className="w-full pl-8 pr-3 py-1.5 rounded-full border border-[var(--border)] bg-[var(--glass-subtle)] text-xs text-[var(--text)] placeholder-[var(--text-3)] focus:outline-none focus:border-purple-400"
           />
           <svg
             className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--text-3)]"
@@ -520,29 +571,57 @@ export default function Module3DiscoveryPage() {
       </div>
 
       {/* -------------------------------------------------------------------- */}
-      {/* 3. The Scrollytelling Trail with Dynamic Wavy Line & Tech Cards      */}
+      {/* 3. The Scrollytelling Trail with Metallic Curved Line & Purple Aurora */}
       {/* -------------------------------------------------------------------- */}
-      <div ref={trailContainerRef} className="relative pt-8 pb-32">
-        {/* Dynamic SVG Wavy Line (Background + Active Glow Stroke) */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+      <div ref={trailContainerRef} className="relative pt-4 pb-24">
+        {/* Origin Marker at Null (Top of Trail) */}
+        <div className="flex flex-col items-center justify-center space-y-2 mb-12">
+          <div className="px-3 py-1 rounded-full bg-purple-950/40 border border-purple-500/30 text-[10px] font-mono text-purple-300 uppercase tracking-widest flex items-center gap-2 shadow-[0_0_12px_rgba(168,85,247,0.2)]">
+            <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
+            <span>ORIGIN (NULL) · CURRICULUM ENTRY</span>
+          </div>
+          <div className="w-8 h-8 rounded-full border-2 border-purple-500/50 bg-[#0d0e14] flex items-center justify-center shadow-[0_0_16px_rgba(168,85,247,0.4)]">
+            <div className="w-2.5 h-2.5 rounded-full bg-purple-400" />
+          </div>
+        </div>
+
+        {/* Dynamic SVG Metallic Curved Line with Purple Aurora Gradient */}
+        <div className="absolute inset-0 pointer-events-none overflow-visible" aria-hidden="true">
           <svg
             className="w-full h-full"
-            preserveAspectRatio="none"
-            viewBox={`0 0 100 ${containerHeightPx}`}
+            viewBox={`0 0 ${containerWidthPx} ${containerHeightPx}`}
           >
             <defs>
-              {/* Aurora Gradient for the active trail */}
-              <linearGradient id="aurora-glow" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#2BB7FF" stopOpacity="0.95" />
-                <stop offset="25%" stopColor="#8B7CFF" stopOpacity="0.95" />
-                <stop offset="50%" stopColor="#FFB547" stopOpacity="0.95" />
-                <stop offset="75%" stopColor="#2EE6C5" stopOpacity="0.95" />
-                <stop offset="100%" stopColor="#FF6584" stopOpacity="0.95" />
+              {/* Metallic Titanium / Chrome Gradient for base track */}
+              <linearGradient id="metallic-chrome" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#252830" />
+                <stop offset="25%" stopColor="#4f5666" />
+                <stop offset="50%" stopColor="#b4bcc9" />
+                <stop offset="75%" stopColor="#4f5666" />
+                <stop offset="100%" stopColor="#252830" />
               </linearGradient>
 
-              {/* Laser glow filter */}
-              <filter id="neon-blur" x="-30%" y="-30%" width="160%" height="160%">
-                <feGaussianBlur stdDeviation="3.5" result="blur" />
+              {/* Purple Aurora Gradient for the active flowing trail */}
+              <linearGradient id="purple-aurora-glow" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#4318FF" stopOpacity="0.9" />
+                <stop offset="25%" stopColor="#7047EB" stopOpacity="1" />
+                <stop offset="50%" stopColor="#9D4EDD" stopOpacity="1" />
+                <stop offset="75%" stopColor="#C084FC" stopOpacity="1" />
+                <stop offset="100%" stopColor="#F472B6" stopOpacity="0.95" />
+              </linearGradient>
+
+              {/* Refined Purple Aurora Bloom Filter (crisp 2.5px, not a 70px blob) */}
+              <filter id="purple-aurora-filter" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="2.5" result="softGlow" />
+                <feMerge>
+                  <feMergeNode in="softGlow" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+
+              {/* Bead Pulse Glow */}
+              <filter id="bead-glow" x="-40%" y="-40%" width="180%" height="180%">
+                <feGaussianBlur stdDeviation="3" result="blur" />
                 <feMerge>
                   <feMergeNode in="blur" />
                   <feMergeNode in="SourceGraphic" />
@@ -550,241 +629,384 @@ export default function Module3DiscoveryPage() {
               </filter>
             </defs>
 
-            {/* 1. Ambient Background Wavy Path */}
+            {/* 1. Outer Metallic Bevel Rail */}
             <path
-              d={
-                svgPathD ||
-                `M 50,0 Q 75,${containerHeightPx * 0.15} 50,${containerHeightPx * 0.3} T 50,${containerHeightPx * 0.6} T 50,${containerHeightPx * 0.9} L 50,${containerHeightPx}`
-              }
+              d={svgPathD}
               fill="none"
-              stroke="rgba(255, 255, 255, 0.08)"
-              strokeWidth="2.5"
-              strokeDasharray="6 6"
+              stroke="rgba(255, 255, 255, 0.05)"
+              strokeWidth="6"
+              strokeLinecap="round"
             />
 
-            {/* 2. Active Illuminated Scroll Path */}
+            {/* 2. Metallic Titanium/Chrome Spine Line */}
             <path
-              d={
-                svgPathD ||
-                `M 50,0 Q 75,${containerHeightPx * 0.15} 50,${containerHeightPx * 0.3} T 50,${containerHeightPx * 0.6} T 50,${containerHeightPx * 0.9} L 50,${containerHeightPx}`
-              }
+              d={svgPathD}
               fill="none"
-              stroke="url(#aurora-glow)"
-              strokeWidth="3.5"
-              filter="url(#neon-blur)"
+              stroke="url(#metallic-chrome)"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              vectorEffect="non-scaling-stroke"
+            />
+
+            {/* 3. Active Illuminated Purple Aurora Trail */}
+            <path
+              ref={activePathRef}
+              d={svgPathD}
+              fill="none"
+              stroke="url(#purple-aurora-glow)"
+              strokeWidth="2.5"
+              filter="url(#purple-aurora-filter)"
+              strokeLinecap="round"
               pathLength="1"
               strokeDasharray="1"
-              strokeDashoffset={1 - Math.min(1, Math.max(0, scrollProgress * 1.15))}
-              className="transition-[stroke-dashoffset] duration-75 ease-out"
+              strokeDashoffset={1 - Math.min(1, Math.max(0, scrollProgress * 1.12))}
+              style={{
+                transition: "stroke-dashoffset 0.2s ease-out",
+              }}
+              vectorEffect="non-scaling-stroke"
             />
+
+            {/* 4. Animated Flowing Purple Aurora Energy Stream */}
+            <path
+              d={svgPathD}
+              fill="none"
+              stroke="#E879F9"
+              strokeWidth="2"
+              filter="url(#purple-aurora-filter)"
+              strokeLinecap="round"
+              strokeDasharray="10 16"
+              className="animate-aurora-stream"
+              pathLength="1"
+              style={{
+                strokeDashoffset: 1 - Math.min(1, Math.max(0, scrollProgress * 1.12)),
+                opacity: scrollProgress > 0.02 ? 0.85 : 0,
+                transition: "stroke-dashoffset 0.2s ease-out, opacity 0.3s ease",
+              }}
+              vectorEffect="non-scaling-stroke"
+            />
+
+            {/* 5. Glowing Head Bead visibly traveling down the curve to the card */}
+            {beadPos && scrollProgress > 0.02 && (
+              <g transform={`translate(${beadPos.x}, ${beadPos.y})`}>
+                <circle r="14" fill="rgba(192, 132, 252, 0.25)" className="animate-ping" />
+                <circle r="7" fill="none" stroke="#F472B6" strokeWidth="1.5" />
+                <circle r="4" fill="#C084FC" filter="url(#bead-glow)" />
+                <circle r="1.5" fill="#FFFFFF" />
+              </g>
+            )}
           </svg>
         </div>
 
-        {/* Trail Items: Alternating Cards Along the Curve (Inspired by Image 4) */}
-        <div className="relative space-y-16 sm:space-y-24">
-          {trailItems.map((item, index) => {
+        {/* Checkpoint Stations Along the Trail */}
+        <div className="relative space-y-20 sm:space-y-28">
+          {visibleTracks.map((track, index) => {
             const isActive = activeNodeIndex === index;
-            const isTrackHeader = item.type === "track";
-
-            if (isTrackHeader) {
-              const { track } = item;
-              return (
-                <div
-                  key={`track-${track.id}`}
-                  ref={(el) => {
-                    nodeRefs.current[index] = el;
-                  }}
-                  id={`track-${track.id}`}
-                  className="relative flex flex-col items-center justify-center text-center px-4 pt-6"
-                >
-                  {/* Waypoint Marker on the Trail */}
-                  <div
-                    className={`w-14 h-14 rounded-2xl border flex items-center justify-center transition-all duration-500 shadow-2xl ${
-                      isActive
-                        ? "border-[var(--accent-bright)] bg-[var(--bg-base)] scale-110 shadow-[0_0_32px_rgba(43,183,255,0.45)] ring-4 ring-[var(--accent-bright)]/20"
-                        : "border-[var(--border-strong)] bg-[var(--glass)] shadow-md"
-                    }`}
-                  >
-                    <div style={{ color: track.accentHex }}>{track.iconSvg}</div>
-                  </div>
-
-                  {/* Waypoint Label */}
-                  <div className="mt-4 space-y-1 max-w-lg">
-                    <span
-                      className="text-[11px] font-mono uppercase tracking-widest font-bold"
-                      style={{ color: track.accentHex }}
-                    >
-                      Track Station
-                    </span>
-                    <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-[var(--text)] tracking-tight">
-                      {track.title}
-                    </h2>
-                    <p className="font-ui text-xs sm:text-sm text-[var(--text-2)]">
-                      {track.subtitle}
-                    </p>
-                  </div>
-                </div>
-              );
-            }
-
-            // Lesson Card Item (Alternating Left & Right)
-            const { lesson, track, indexInTrack } = item;
-            const isLeft = indexInTrack % 2 === 0;
-            const isEli5Active = cardEli5State[lesson.id] ?? globalEli5;
+            const trackLessons = filteredLessons.filter((l) =>
+              l.paths.includes(track.id)
+            );
+            const isAnyChapterActive = trackLessons.some(
+              (l) => l.id === expandedLessonId
+            );
 
             return (
               <div
-                key={`lesson-${lesson.id}`}
+                key={`track-station-${track.id}`}
                 ref={(el) => {
-                  nodeRefs.current[index] = el;
+                  checkpointRefs.current[index] = el;
                 }}
-                className={`relative flex items-center ${
-                  isLeft
-                    ? "justify-start md:pr-[50%]"
-                    : "justify-end md:pl-[50%]"
-                }`}
+                id={`track-${track.id}`}
+                className="relative max-w-3xl mx-auto px-4"
               >
-                {/* Node Anchor on the curve */}
-                <div
-                  className={`hidden md:block absolute left-1/2 -translate-x-1/2 w-4 h-4 rounded-full border-2 transition-all duration-300 z-10 ${
-                    isActive
-                      ? "bg-[var(--accent-bright)] border-white scale-125 shadow-[0_0_16px_var(--accent-bright)]"
-                      : "bg-[var(--bg-base)] border-[var(--border-strong)]"
-                  }`}
-                />
-
-                {/* Card Container (Styled with Image 4's clean dark aesthetics) */}
-                <div className="w-full md:max-w-[460px] px-2 sm:px-4">
-                  <GlassCard
-                    tone="strong"
-                    padding="lg"
-                    className={`relative space-y-5 transition-all duration-300 group ${
+                {/* Input Connector Port at Top of Card */}
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-20 flex items-center justify-center">
+                  <div
+                    className={`w-6 h-6 rounded-full border-2 transition-all duration-300 flex items-center justify-center shadow-lg ${
                       isActive
-                        ? "border-[var(--accent-bright)] shadow-[0_0_36px_rgba(43,183,255,0.25)] ring-1 ring-[var(--accent-bright)]/30 scale-[1.01]"
-                        : "hover:border-[var(--border-strong)] shadow-xl"
+                        ? "bg-[#180e29] border-[#C084FC] scale-110 shadow-[0_0_16px_#C084FC]"
+                        : "bg-[#0f1117] border-white/20"
                     }`}
                   >
-                    {/* Top Row: Glowing Icon Box (as in Image 4), Track Chip & ELI5 Toggle */}
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        {/* Glowing Icon Square (like JS/TS boxes in Image 4) */}
-                        <div
-                          className="w-11 h-11 rounded-xl flex items-center justify-center border border-white/10 relative transition-transform group-hover:scale-105"
-                          style={{
-                            backgroundColor: "#1c1e24",
-                            color: track.accentHex,
-                            boxShadow: `0 0 20px ${track.accentHex}25`,
-                          }}
-                        >
-                          <div
-                            className="absolute inset-0 rounded-xl blur-sm opacity-30"
-                            style={{ backgroundColor: track.accentHex }}
-                          />
-                          <div className="relative z-10">{track.iconSvg}</div>
-                        </div>
+                    <div
+                      className={`w-2 h-2 rounded-full transition-colors ${
+                        isActive ? "bg-[#F472B6]" : "bg-white/40"
+                      }`}
+                    />
+                  </div>
+                </div>
 
-                        <div>
-                          <Chip v={track.title} tone={track.tone} />
-                        </div>
-                      </div>
-
-                      {/* ELI5 Switch on Card */}
-                      <button
-                        type="button"
-                        onClick={() => toggleCardEli5(lesson.id)}
-                        className={`px-2.5 py-1 rounded-full border text-[11px] font-mono font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
-                          isEli5Active
-                            ? "bg-[#FFB547]/20 border-[#FFB547] text-[#FFB547] shadow-[0_0_10px_rgba(255,181,71,0.3)]"
-                            : "bg-[var(--glass-subtle)] border-[var(--border)] text-[var(--text-3)] hover:text-[var(--text)]"
+                {/* Main Checkpoint Card (Compact & Organized) */}
+                <GlassCard
+                  tone="strong"
+                  padding="lg"
+                  className={`relative space-y-5 transition-all duration-400 group rounded-3xl ${
+                    isActive
+                      ? "border-purple-500/70 shadow-[0_0_40px_rgba(168,85,247,0.28)] ring-1 ring-purple-400/40 scale-[1.01]"
+                      : "border-white/10 hover:border-purple-500/30 shadow-2xl"
+                  }`}
+                >
+                  {/* Station Header with Metallic Icon Box & Title */}
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-center gap-3.5">
+                      {/* Metallic 3D-styled Icon Box */}
+                      <div
+                        className={`w-13 h-13 rounded-2xl flex items-center justify-center border transition-all duration-300 relative ${
+                          isActive
+                            ? "bg-[#1f1633] border-purple-400/80 shadow-[0_0_24px_rgba(168,85,247,0.4)] text-purple-300"
+                            : "bg-[#15171e] border-white/10 text-[var(--text-2)] group-hover:border-purple-400/30"
                         }`}
                       >
-                        <span>{isEli5Active ? "👶 ELI5" : "💡 Tech"}</span>
-                      </button>
+                        <div className="relative z-10">{track.iconSvg}</div>
+                      </div>
+
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-mono uppercase tracking-widest font-bold text-purple-400">
+                            CHECKPOINT 0{index + 1}
+                          </span>
+                          <span className="text-white/20">•</span>
+                          <span className="text-[10px] font-mono text-[var(--text-3)]">
+                            {trackLessons.length} Bites
+                          </span>
+                        </div>
+                        <h2 className="font-display text-xl sm:text-2xl font-black text-white tracking-tight">
+                          {track.title}
+                        </h2>
+                      </div>
                     </div>
 
-                    {/* Lesson Title & Outcome / ELI5 Metaphor */}
-                    <div className="space-y-2">
-                      <h3 className="font-display text-xl font-bold text-[var(--text)] group-hover:text-[var(--accent-bright)] transition-colors">
-                        {lesson.title}
-                      </h3>
+                    <Chip v={track.title} tone={track.tone} />
+                  </div>
 
-                      {isEli5Active ? (
-                        <div className="p-3 rounded-xl bg-[#FFB547]/10 border border-[#FFB547]/25 text-xs sm:text-sm text-[#FFB547] leading-relaxed transition-all animate-fadeIn">
-                          <span className="font-bold mr-1">👶 ELI5 Metaphor:</span>
-                          {lesson.eli5 || lesson.outcome}
+                  {/* "About this tech" Section */}
+                  <div className="p-4 rounded-2xl bg-purple-950/20 border border-purple-500/20 text-xs sm:text-sm text-[var(--text-2)] leading-relaxed space-y-1">
+                    <div className="text-[11px] font-mono font-bold text-purple-300 uppercase tracking-wider flex items-center gap-2">
+                      <span>💡</span>
+                      <span>About This Tech</span>
+                    </div>
+                    <p>{track.about}</p>
+                  </div>
+
+                  {/* Chapters Inside (Small Boxy Content - Compact, Not Scattered) */}
+                  <div className="space-y-2.5 pt-1">
+                    <div className="flex items-center justify-between text-[11px] font-mono text-[var(--text-3)]">
+                      <span className="uppercase tracking-widest text-purple-300 font-semibold flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
+                        Chapters in this Station
+                      </span>
+                      <span>Click a chapter to explore</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      {trackLessons.map((lesson) => {
+                        const isExpanded = expandedLessonId === lesson.id;
+                        return (
+                          <button
+                            key={lesson.id}
+                            type="button"
+                            onClick={() => {
+                              const next = isExpanded ? null : lesson.id;
+                              setExpandedLessonId(next);
+                              if (soundEnabled) playMetallicChime(isExpanded ? 1.0 : 1.3);
+                            }}
+                            className={`p-3 rounded-xl border text-left flex items-center justify-between gap-3 transition-all cursor-pointer ${
+                              isExpanded
+                                ? "bg-purple-950/40 border-purple-400 shadow-[0_0_20px_rgba(168,85,247,0.3)] ring-1 ring-purple-400 text-white"
+                                : "bg-[#111318]/90 border-white/10 hover:border-purple-400/40 hover:bg-[#181a22] text-[var(--text-2)]"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <span className="text-base shrink-0">
+                                {getLessonIcon(lesson.id)}
+                              </span>
+                              <div className="min-w-0">
+                                <div className="font-ui text-xs font-semibold text-white truncate">
+                                  {lesson.title}
+                                </div>
+                                <div className="text-[10px] font-mono text-[var(--text-3)] flex items-center gap-2 mt-0.5">
+                                  <span>15m bite</span>
+                                  <span>•</span>
+                                  <span className="text-emerald-400">+{lesson.xpAward} XP</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <span
+                              className={`text-xs font-mono text-purple-400 shrink-0 transition-transform duration-200 ${
+                                isExpanded ? "rotate-180" : ""
+                              }`}
+                            >
+                              ▾
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Expanded Chapter Content in Card Form (Revealed On-Demand) */}
+                  {expandedLesson && isAnyChapterActive && (
+                    <div className="mt-4 p-5 rounded-2xl bg-[#0e1017]/95 border border-purple-500/40 shadow-[0_0_30px_rgba(168,85,247,0.2)] space-y-4 animate-fadeIn">
+                      {/* Active Chapter Header */}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-base">
+                              {getLessonIcon(expandedLesson.id)}
+                            </span>
+                            <span className="text-xs font-mono font-bold text-purple-300 uppercase tracking-wider">
+                              Active Chapter Focus
+                            </span>
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                              +{expandedLesson.xpAward} XP
+                            </span>
+                          </div>
+                          <h3 className="font-display text-lg font-bold text-white">
+                            {expandedLesson.title}
+                          </h3>
+                        </div>
+
+                        {/* ELI5 Switch */}
+                        <button
+                          type="button"
+                          onClick={() => toggleCardEli5(expandedLesson.id)}
+                          className={`px-3 py-1.5 rounded-full border text-xs font-mono font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                            (cardEli5State[expandedLesson.id] ?? globalEli5)
+                              ? "bg-[#FFB547]/20 border-[#FFB547] text-[#FFB547] shadow-[0_0_12px_rgba(255,181,71,0.3)]"
+                              : "bg-[#181a22] border-white/10 text-[var(--text-3)] hover:text-white"
+                          }`}
+                        >
+                          <span>
+                            {(cardEli5State[expandedLesson.id] ?? globalEli5)
+                              ? "👶 ELI5"
+                              : "💡 Tech"}
+                          </span>
+                        </button>
+                      </div>
+
+                      {/* Content: Outcome or ELI5 Metaphor */}
+                      {(cardEli5State[expandedLesson.id] ?? globalEli5) ? (
+                        <div className="p-3.5 rounded-xl bg-[#FFB547]/10 border border-[#FFB547]/30 text-xs sm:text-sm text-[#FFB547] leading-relaxed">
+                          <span className="font-bold mr-1.5">👶 ELI5 Metaphor:</span>
+                          {expandedLesson.eli5 || expandedLesson.outcome}
                         </div>
                       ) : (
                         <p className="font-ui text-xs sm:text-sm text-[var(--text-2)] leading-relaxed">
-                          {lesson.outcome}
+                          {expandedLesson.outcome}
                         </p>
                       )}
-                    </div>
 
-                    {/* 5-Stage Step Visualizer */}
-                    <div className="pt-2 border-t border-[var(--border)] space-y-2">
-                      <div className="flex items-center justify-between text-[11px] font-mono text-[var(--text-3)]">
-                        <span className="font-semibold uppercase tracking-wider">
-                          5 Short Stages (15 min)
-                        </span>
-                        <span className="text-[var(--state-done)] font-bold">
-                          +{lesson.xpAward} XP
-                        </span>
+                      {/* 5 Short Stages Indicator */}
+                      <div className="pt-2 border-t border-white/10 space-y-2">
+                        <div className="flex items-center justify-between text-[11px] font-mono text-[var(--text-3)]">
+                          <span className="uppercase tracking-wider font-semibold text-purple-300">
+                            5 Short Stages (15 Min Total)
+                          </span>
+                          <span>Interactive Step Progression</span>
+                        </div>
+                        <div className="grid grid-cols-5 gap-1.5 text-center text-[10px] font-mono">
+                          <div className="py-1.5 px-1 rounded-lg bg-white/5 border border-white/10 text-slate-300">
+                            1. Why
+                          </div>
+                          <div className="py-1.5 px-1 rounded-lg bg-white/5 border border-white/10 text-slate-300">
+                            2. Model
+                          </div>
+                          <div className="py-1.5 px-1 rounded-lg bg-white/5 border border-white/10 text-slate-300">
+                            3. See
+                          </div>
+                          <div className="py-1.5 px-1 rounded-lg bg-white/5 border border-white/10 text-slate-300">
+                            4. Try
+                          </div>
+                          <div className="py-1.5 px-1 rounded-lg bg-white/5 border border-white/10 text-slate-300">
+                            5. Recall
+                          </div>
+                        </div>
                       </div>
 
-                      <div className="grid grid-cols-5 gap-1.5 text-center text-[10px] font-mono">
-                        <div className="py-1 px-1 rounded bg-[var(--glass-subtle)] border border-[var(--border)] text-[var(--text-2)]">
-                          1. Why
-                        </div>
-                        <div className="py-1 px-1 rounded bg-[var(--glass-subtle)] border border-[var(--border)] text-[var(--text-2)]">
-                          2. Model
-                        </div>
-                        <div className="py-1 px-1 rounded bg-[var(--glass-subtle)] border border-[var(--border)] text-[var(--text-2)]">
-                          3. See
-                        </div>
-                        <div className="py-1 px-1 rounded bg-[var(--glass-subtle)] border border-[var(--border)] text-[var(--text-2)]">
-                          4. Try
-                        </div>
-                        <div className="py-1 px-1 rounded bg-[var(--glass-subtle)] border border-[var(--border)] text-[var(--text-2)]">
-                          5. Recall
+                      {/* Action Footer */}
+                      <div className="pt-2 flex items-center justify-between gap-3 border-t border-white/10">
+                        <span className="text-[11px] font-mono text-[var(--text-3)]">
+                          {expandedLesson.prerequisites.length > 0
+                            ? `Prereq: ${expandedLesson.prerequisites[0]}`
+                            : "No prerequisites required"}
+                        </span>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setExpandedLessonId(null)}
+                            className="px-3 py-1.5 rounded-full border border-white/10 text-xs font-mono text-[var(--text-3)] hover:text-white hover:bg-white/5 transition-all cursor-pointer"
+                          >
+                            ▲ Collapse
+                          </button>
+
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            href={`/m3/lesson/${expandedLesson.id}`}
+                            className="shadow-[0_0_18px_rgba(168,85,247,0.4)]"
+                          >
+                            Start 15-Min Bite &rarr;
+                          </Button>
                         </div>
                       </div>
                     </div>
+                  )}
+                </GlassCard>
 
-                    {/* Action Footer */}
-                    <div className="pt-3 flex items-center justify-between gap-3">
-                      <span className="text-[11px] font-mono text-[var(--text-3)]">
-                        {lesson.prerequisites.length > 0
-                          ? `Prereq: ${lesson.prerequisites[0]}`
-                          : "No prerequisites"}
-                      </span>
-
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        href={`/m3/lesson/${lesson.id}`}
-                        className="shadow-[0_0_14px_rgba(94,78,240,0.3)]"
-                      >
-                        Start 15-Min Bite &rarr;
-                      </Button>
-                    </div>
-                  </GlassCard>
+                {/* Output Connector Port at Bottom of Card */}
+                <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center justify-center">
+                  <div
+                    className={`w-6 h-6 rounded-full border-2 transition-all duration-300 flex items-center justify-center shadow-lg ${
+                      isActive
+                        ? "bg-[#180e29] border-[#C084FC] shadow-[0_0_14px_#C084FC]"
+                        : "bg-[#0f1117] border-white/20"
+                    }`}
+                  >
+                    <div
+                      className={`w-2 h-2 rounded-full transition-colors ${
+                        isActive ? "bg-[#F472B6]" : "bg-white/40"
+                      }`}
+                    />
+                  </div>
                 </div>
               </div>
             );
           })}
         </div>
+
+        {/* Trail Terminus at Bottom */}
+        <div className="flex flex-col items-center justify-center space-y-4 pt-20 pb-8 text-center">
+          <div className="w-10 h-10 rounded-2xl border border-purple-500/40 bg-[#0d0e14] flex items-center justify-center shadow-[0_0_20px_rgba(168,85,247,0.3)]">
+            <span className="text-lg">🎯</span>
+          </div>
+          <div className="space-y-1 max-w-sm">
+            <h3 className="font-display text-lg font-bold text-white">
+              Curriculum Complete
+            </h3>
+            <p className="font-ui text-xs text-[var(--text-3)]">
+              You&apos;ve explored the curriculum checkpoints. Open the Spaced
+              Repetition queue to lock in your active recall.
+            </p>
+          </div>
+          <Link
+            href="/m3/retest"
+            className="px-5 py-2 rounded-full bg-[var(--accent-grad)] text-white text-xs font-mono font-bold shadow-[0_0_20px_rgba(94,78,240,0.4)] hover:brightness-110 transition-all"
+          >
+            Open Retest Queue (SM-2) &rarr;
+          </Link>
+        </div>
       </div>
 
       {/* -------------------------------------------------------------------- */}
-      {/* 4. Floating "Ask Gemini" Pill & Quick Jump (As in User Image 4)      */}
+      {/* 4. Floating "Ask Gemini" Pill & Quick Jump                           */}
       {/* -------------------------------------------------------------------- */}
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
         <button
           type="button"
           onClick={() => setGeminiModalOpen(true)}
-          className="px-5 py-2.5 rounded-full bg-[#16181d]/90 backdrop-blur-xl border border-[#2a2d35] hover:border-[var(--accent-bright)] text-xs font-mono font-semibold text-white flex items-center gap-2.5 shadow-[0_12px_32px_rgba(0,0,0,0.6)] hover:scale-105 transition-all cursor-pointer group"
+          className="px-5 py-2.5 rounded-full bg-[#16181d]/90 backdrop-blur-xl border border-[#2a2d35] hover:border-purple-400 text-xs font-mono font-semibold text-white flex items-center gap-2.5 shadow-[0_12px_32px_rgba(0,0,0,0.6)] hover:scale-105 transition-all cursor-pointer group"
         >
-          <span className="w-2 h-2 rounded-full bg-[var(--accent-bright)] shadow-[0_0_8px_var(--accent-bright)] group-hover:scale-125 transition-transform" />
+          <span className="w-2 h-2 rounded-full bg-purple-400 shadow-[0_0_8px_#C084FC] group-hover:scale-125 transition-transform" />
           <span>Ask Gemini</span>
         </button>
       </div>
@@ -805,7 +1027,7 @@ export default function Module3DiscoveryPage() {
           >
             <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
               <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-[var(--accent-bright)] shadow-[0_0_8px_var(--accent-bright)]" />
+                <span className="w-2.5 h-2.5 rounded-full bg-purple-400 shadow-[0_0_8px_#C084FC]" />
                 <h3 className="font-display text-lg font-bold text-[var(--text)]">
                   Ask Gemini · Tech Bites Curriculum
                 </h3>
@@ -826,12 +1048,12 @@ export default function Module3DiscoveryPage() {
                 active stages without lecture fatigue.
               </p>
               <div className="p-3 rounded-xl bg-[var(--glass-subtle)] border border-[var(--border)] space-y-2 text-xs font-mono">
-                <div className="text-[var(--accent-bright)] font-bold">
+                <div className="text-purple-300 font-bold">
                   Recommended Learning Trajectory:
                 </div>
                 <ul className="space-y-1 list-disc list-inside text-[var(--text)]">
                   <li>
-                    <strong>AI Engineers:</strong> RAG Pipeline → LLM Basics → Tokens & BPE → Embeddings
+                    <strong>AI Engineers:</strong> RAG Pipeline → LLM Basics → Tokens & BPE → Vector Embeddings
                   </li>
                   <li>
                     <strong>Backend Engineers:</strong> Caching & Cache-Aside → HTTP/REST Idempotency → Docker Containers
