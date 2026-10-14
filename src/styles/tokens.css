@@ -39,9 +39,9 @@
 :root,
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg-base: #07080F;
-  --bg-raised: #0D0F1A;
-  --surface-solid: #12141F;
+  --bg-base: #07080a;
+  --bg-raised: #0E1015;
+  --surface-solid: #13151D;
   --glass: rgba(255, 255, 255, 0.05);
   --glass-strong: rgba(255, 255, 255, 0.08);
   --glass-subtle: rgba(255, 255, 255, 0.03);
@@ -55,13 +55,16 @@
   --good-fg: #6EE7B7;
   --bad-bg: rgba(255, 107, 107, 0.14);
   --bad-fg: #FF8A8A;
-  --aurora-opacity: 0.22;
+  --aurora-opacity: 0.85;
   --aurora-blend: screen;
-  --blob-1: var(--aurora-violet);
-  --blob-2: var(--aurora-azure);
-  --blob-3: var(--aurora-mint);
+  --aurora-crimson: #ff2f3a;
+  --aurora-coral: #ff6b4a;
+  --aurora-amber: #ffb347;
+  --blob-1: #ff2f3a;
+  --blob-2: #ff6b4a;
+  --blob-3: #ffb347;
   --code-bg: #0B0D17;
-  --glow-accent: 0 12px 40px -12px rgba(94, 78, 240, 0.7);
+  --glow-accent: 0 12px 40px -12px rgba(255, 47, 58, 0.7);
 
   /* Compatibility aliases mapping to aurora tokens */
   --surface-canvas: var(--bg-base);
