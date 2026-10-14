@@ -302,7 +302,7 @@
   .glass,
   .glass--strong,
   .glass--subtle,
-  .dock,
+  .legacy-dock,
   .dialog__sheet,
   .bezel {
     background: var(--surface-solid) !important;
@@ -691,7 +691,7 @@
 /* --------------------------------------------------------------------------
    8. Floating Dock (Mobile) & Sidebar Active
    -------------------------------------------------------------------------- */
-.dock {
+.legacy-dock {
   position: fixed;
   left: 50%;
   transform: translateX(-50%);
@@ -711,7 +711,7 @@
   box-shadow: inset 0 1px 0 var(--rim), 0 20px 48px -12px rgba(7, 8, 15, 0.6);
 }
 
-.dock a {
+.legacy-dock a {
   display: grid;
   place-items: center;
   width: 48px;
@@ -722,7 +722,7 @@
   transition: background 0.2s, color 0.2s, box-shadow 0.2s;
 }
 
-.dock a[aria-current="page"] {
+.legacy-dock a[aria-current="page"] {
   background: var(--accent-grad);
   color: #ffffff;
   box-shadow: var(--glow-accent);

@@ -2,6 +2,9 @@
   position: relative;
   z-index: 40;
   display: flex;
+  width: max-content;
+  max-width: calc(100vw - 24px);
+  flex-shrink: 0;
   align-items: center;
   gap: var(--dock-gap);
   box-sizing: border-box;

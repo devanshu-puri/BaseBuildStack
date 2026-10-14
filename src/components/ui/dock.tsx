@@ -66,19 +66,19 @@ const POP = 'cubic-bezier(0.2, 1.25, 0.4, 1)';
 
 const THEMES = {
   dark: {
-    '--dock-panel': 'linear-gradient(180deg, rgba(26, 28, 38, 0.88) 0%, rgba(15, 17, 24, 0.94) 100%)',
-    '--dock-panel-edge': 'rgba(255, 255, 255, 0.12)',
-    '--dock-panel-highlight': 'rgba(255, 255, 255, 0.18)',
-    '--dock-panel-shadow': '0 24px 60px -12px rgba(0, 0, 0, 0.9), 0 0 28px rgba(139, 124, 255, 0.12)',
-    '--dock-tile': 'linear-gradient(180deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.02) 60%, rgba(0, 0, 0, 0.3) 100%), #1d1f29',
-    '--dock-tile-edge': 'rgba(255, 255, 255, 0.12)',
-    '--dock-tile-highlight': 'rgba(255, 255, 255, 0.20)',
-    '--dock-tile-shadow': '0 4px 14px -2px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.16)',
+    '--dock-panel': 'linear-gradient(180deg, rgba(24, 26, 36, 0.94) 0%, rgba(13, 15, 22, 0.98) 100%)',
+    '--dock-panel-edge': 'rgba(255, 255, 255, 0.14)',
+    '--dock-panel-highlight': 'rgba(255, 255, 255, 0.20)',
+    '--dock-panel-shadow': '0 24px 60px -12px rgba(0, 0, 0, 0.95), 0 0 32px rgba(168, 85, 247, 0.16)',
+    '--dock-tile': 'linear-gradient(180deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0.02) 50%, rgba(0, 0, 0, 0.3) 100%), #1f222e',
+    '--dock-tile-edge': 'rgba(255, 255, 255, 0.15)',
+    '--dock-tile-highlight': 'rgba(255, 255, 255, 0.24)',
+    '--dock-tile-shadow': '0 4px 14px -2px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.18)',
     '--dock-ink': '#ffffff',
     '--dock-label': 'rgba(14, 16, 24, 0.95)',
     '--dock-label-ink': '#ffffff',
     '--dock-dot': '#C084FC',
-    '--dock-separator': 'rgba(255, 255, 255, 0.14)',
+    '--dock-separator': 'rgba(255, 255, 255, 0.16)',
     '--dock-press': 'brightness(0.85)',
     '--dock-menu': 'rgba(18, 21, 30, 0.95)',
     '--dock-menu-edge': 'rgba(255, 255, 255, 0.16)',
@@ -86,7 +86,7 @@ const THEMES = {
     '--dock-menu-muted': 'rgba(244, 244, 245, 0.5)',
     '--dock-menu-separator': 'rgba(255, 255, 255, 0.12)',
     '--dock-menu-shadow': '0 20px 48px -12px rgba(0, 0, 0, 0.85), 0 4px 14px rgba(0, 0, 0, 0.4)',
-    '--dock-glow': 'rgba(139, 124, 255, 0.25)'
+    '--dock-glow': 'rgba(168, 85, 247, 0.25)'
   },
   light: {
     '--dock-panel': 'linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(240, 243, 250, 0.7) 100%)',

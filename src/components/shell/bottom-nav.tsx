@@ -9,6 +9,7 @@ import {
   AlgorithmIcon,
   Brain02Icon,
   BookOpen01Icon,
+  PuzzleIcon,
   Analytics01Icon,
   Bookmark01Icon,
 } from "@hugeicons/core-free-icons";
@@ -87,6 +88,19 @@ export function BottomNav() {
       ],
     },
     {
+      icon: <HugeiconsIcon icon={PuzzleIcon} size={22} strokeWidth={1.8} className="text-white" />,
+      label: "M4: Logic & Mind",
+      href: "/m4",
+      active: pathname.startsWith("/m4"),
+      menu: [
+        { label: "Mind Sprint Hub", onClick: () => router.push("/m4") },
+        { separator: true },
+        { label: "Daily Mind Sprint (5m)", onClick: () => router.push("/m4/sprint") },
+        { label: "Logic Grid Solver", onClick: () => router.push("/m4/logic-grid") },
+        { label: "Metacognitive Calibration", onClick: () => router.push("/m4/insights") },
+      ],
+    },
+    {
       icon: <HugeiconsIcon icon={Analytics01Icon} size={22} strokeWidth={1.8} className="text-white" />,
       label: "Progress",
       href: "/progress",
@@ -110,15 +124,15 @@ export function BottomNav() {
   return (
     <nav
       aria-label="Floating liquid glass dock navigation"
-      className="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-40 pointer-events-auto select-none"
+      className="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-40 pointer-events-auto select-none flex justify-center w-max max-w-[96vw]"
     >
       <Dock
         items={items}
         position="bottom"
         theme="dark"
         baseItemSize={48}
-        magnification={64}
-        distance={140}
+        magnification={62}
+        distance={130}
         panelHeight={68}
         gap={8}
         roundness={0.65}
