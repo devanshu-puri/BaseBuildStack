@@ -285,16 +285,43 @@ export default function Module3DiscoveryPage() {
     }
   }, [getCenter]);
 
-  // Compute exact coordinate on path with 15% dwell time at start and end
+  // Compute exact coordinate on path or within card
   const getPos = useCallback((p: number, N: number) => {
     p = Math.max(0, Math.min(p, N - 1));
     const idx = Math.min(Math.floor(p), N - 2);
     const frac = p - idx;
-    const tt = Math.min(Math.max((frac - 0.15) / 0.7, 0), 1);
+
     const path = pathsRef.current[idx];
     const len = pathLengthsRef.current[idx];
     if (!path || !len) return { x: 0, y: 0 };
-    return path.getPointAtLength(tt * len);
+
+    // Segment stages:
+    // 1. [0 .. 0.35]: Inside start card (idx) - dwell delay
+    // 2. [0.35 .. 0.95]: Traveling along the Bezier wire
+    // 3. [0.95 .. 1.0]: Merged into destination card (idx + 1)
+    if (frac < 0.35) {
+      if (idx > 0 && pathsRef.current[idx - 1] && pathLengthsRef.current[idx - 1]) {
+        // Smoothly transit inside card idx from its top node to its bottom node
+        const prevPath = pathsRef.current[idx - 1];
+        const prevLen = pathLengthsRef.current[idx - 1];
+        const topPt = prevPath.getPointAtLength(prevLen);
+        const botPt = path.getPointAtLength(0);
+        const tCard = frac / 0.35;
+        return {
+          x: topPt.x + (botPt.x - topPt.x) * tCard,
+          y: topPt.y + (botPt.y - topPt.y) * tCard,
+        };
+      }
+      // For origin card (idx = 0), sit at its bottom node
+      return path.getPointAtLength(0);
+    } else if (frac > 0.95) {
+      // Merged at top node of destination card
+      return path.getPointAtLength(len);
+    } else {
+      // Traveling on Bezier wire
+      const tt = (frac - 0.35) / 0.60;
+      return path.getPointAtLength(tt * len);
+    }
   }, []);
 
   // Update card activation and trigger chime
@@ -323,11 +350,20 @@ export default function Module3DiscoveryPage() {
 
       // 1. Draw glowing lines up to progress
       paths.forEach((p, i) => {
-        if (i < idx) p.style.strokeDashoffset = "0";
-        else if (i > idx) p.style.strokeDashoffset = `${pathLengths[i]}`;
-        else {
-          const tt = Math.min(Math.max((frac - 0.15) / 0.7, 0), 1);
-          p.style.strokeDashoffset = `${pathLengths[i] * (1 - tt)}`;
+        if (i < idx) {
+          p.style.strokeDashoffset = "0";
+        } else if (i > idx) {
+          p.style.strokeDashoffset = `${pathLengths[i]}`;
+        } else {
+          // Current wire (idx)
+          if (frac < 0.35) {
+            p.style.strokeDashoffset = `${pathLengths[i]}`;
+          } else if (frac > 0.95) {
+            p.style.strokeDashoffset = "0";
+          } else {
+            const tt = (frac - 0.35) / 0.60;
+            p.style.strokeDashoffset = `${pathLengths[i] * (1 - tt)}`;
+          }
         }
       });
 
@@ -338,7 +374,8 @@ export default function Module3DiscoveryPage() {
         particleRef.current.setAttribute("cy", `${pt.y}`);
       }
 
-      // 3. Move trail particles
+      // 3. Move trail particles (only visible when in motion on the wire)
+      const isWireTransit = frac >= 0.35 && frac <= 0.95;
       const trails = trailsRef.current;
       const trailCount = trails.length;
       trails.forEach((t, i) => {
@@ -346,15 +383,20 @@ export default function Module3DiscoveryPage() {
         const tp = getPos(trailP, N);
         t.setAttribute("cx", `${tp.x}`);
         t.setAttribute("cy", `${tp.y}`);
-        const isResting = frac < 0.15 || frac > 0.85;
-        t.style.opacity = isResting ? "0" : `${1 - i / trailCount}`;
+        t.style.opacity = isWireTransit ? `${1 - i / trailCount}` : "0";
       });
 
-      // 4. Dwell / Hold logic: 15% dwell time at start and end of every path
+      // 4. Card Activation:
+      // ONLY pop when tracer merges into the card (frac >= 0.95)!
+      // Extended dwell: card stays popped while inside the card (frac <= 0.35 of current or frac >= 0.95 of prev)
       let newActive = -1;
-      if (frac < 0.2) newActive = idx; // Dwell at start card
-      else if (frac > 0.8) newActive = idx + 1; // Dwell at next card
-      else newActive = -1; // Travelling between cards
+      if (frac >= 0.95) {
+        newActive = idx + 1; // Pop next card at the exact moment of merge!
+      } else if (frac <= 0.35) {
+        newActive = idx; // Dwell inside current card
+      } else {
+        newActive = -1; // Traveling along wire: NEITHER card is popped!
+      }
 
       updateCards(newActive);
     },
@@ -367,8 +409,8 @@ export default function Module3DiscoveryPage() {
     const N = nodes.length;
     if (N < 2) return;
 
-    // The user's natural focus line (45% down the viewport)
-    const targetY = window.innerHeight * 0.45;
+    // The user's natural focus line (48% down the viewport, near center)
+    const targetY = window.innerHeight * 0.48;
 
     // Collect viewport centers of all 6 cards
     const centers: number[] = [];
@@ -529,7 +571,7 @@ export default function Module3DiscoveryPage() {
       <div
         ref={containerRef}
         id="container"
-        className="relative pb-[40vh]"
+        className="relative pb-[65vh]"
         style={{
           perspective: "1200px",
           transformStyle: "preserve-3d",
