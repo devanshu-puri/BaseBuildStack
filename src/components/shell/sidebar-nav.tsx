@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Chip } from "@/components/ui/chip";
 import SpecularButton from "@/components/ui/specular-button";
+import { AnimatedLogo } from "@/components/ui/animated-logo";
 
 const primaryNav = [
   {
@@ -53,16 +54,14 @@ export function SidebarNav() {
     >
       <div className="space-y-6">
         {/* Brand header */}
-        <div className="flex items-center gap-3 px-2 py-1">
-          <div className="w-8 h-8 rounded-[10px] bg-[var(--accent-grad)] text-white font-bold font-mono text-[14px] flex items-center justify-center border border-white/20 shadow-[0_0_16px_rgba(94,78,240,0.5)]">
-            B
-          </div>
+        <Link href="/home" className="flex items-center gap-3 px-2 py-1 group">
+          <AnimatedLogo size={34} />
           <div>
             <span className="font-display font-extrabold text-[17px] text-[var(--text)] tracking-tight">
               BaseBuild<span className="font-normal text-[var(--text-3)]">Stack</span>
             </span>
           </div>
-        </div>
+        </Link>
 
         {/* Primary nav list */}
         <nav aria-label="Main menu" className="space-y-1">

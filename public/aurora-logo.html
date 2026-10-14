@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BaseBuildStack - Seamless Aurora Pyramid</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: transparent;
+            overflow: hidden;
+            font-family: sans-serif;
+        }
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        canvas {
+            width: 100% !important;
+            height: 100% !important;
+            display: block;
+        }
+    </style>
+    <!-- Three.js r128 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- RoundedBoxGeometry for curved edges -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/geometries/RoundedBoxGeometry.js"></script>
+    <!-- Post-Processing -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+    <!-- GSAP for stacking animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+
+    <script>
+        // --- Scene Setup ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        
+        // Slightly lower camera position so the pyramid is centered in square viewport
+        const camera = new THREE.PerspectiveCamera(44, 1.0, 0.1, 100);
+        camera.position.set(0, 1.8, 9.6);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        
+        // Use crisp internal resolution buffer (min 180px) to give UnrealBloomPass clean mipmaps
+        const internalRes = Math.max(Math.round(Math.max(window.innerWidth, window.innerHeight) * (window.devicePixelRatio || 2)), 180);
+        renderer.setSize(internalRes, internalRes, false);
+        renderer.setPixelRatio(1);
+        renderer.setClearColor(0x000000, 0); // Transparent background
+        container.appendChild(renderer.domElement);
+
+        // --- Post-Processing (Soft Bloom for Aurora) ---
+        const renderScene = new THREE.RenderPass(scene, camera);
+        
+        // Gentle bloom tuned for small logo container
+        const bloomPass = new THREE.UnrealBloomPass(
+            new THREE.Vector2(internalRes, internalRes),
+            0.55, // strength
+            0.5,  // radius
+            0.4   // threshold
+        );
+        
+        const composer = new THREE.EffectComposer(renderer);
+        composer.addPass(renderScene);
+        composer.addPass(bloomPass);
+
+        const pyramidGroup = new THREE.Group();
+        // Offset center of pyramid group so it sits optically dead-center
+        pyramidGroup.position.y = -0.2;
+        scene.add(pyramidGroup);
+
+        // --- Custom Seamless Aurora Shader ---
+        // Palette: #32304a, #272545, #5840cc, #be99e3
+        const auroraUniforms = {
+            u_time: { value: 0 },
+            u_c1: { value: new THREE.Color('#272545') }, // Base Navy
+            u_c2: { value: new THREE.Color('#32304a') }, // Dark Slate
+            u_c3: { value: new THREE.Color('#5840cc') }, // Vibrant Purple
+            u_c4: { value: new THREE.Color('#be99e3') }  // Top Lilac
+        };
+
+        const vertexShader = `
+            varying vec3 vWorldPosition;
+            varying vec3 vNormal;
+            void main() {
+                vNormal = normalize(normalMatrix * normal);
+                vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+                vWorldPosition = worldPosition.xyz;
+                gl_Position = projectionMatrix * viewMatrix * worldPosition;
+            }
+        `;
+
+        const fragmentShader = `
+            varying vec3 vWorldPosition;
+            varying vec3 vNormal;
+            
+            uniform float u_time;
+            uniform vec3 u_c1;
+            uniform vec3 u_c2;
+            uniform vec3 u_c3;
+            uniform vec3 u_c4;
+
+            void main() {
+                float normalizedY = (vWorldPosition.y + 1.5) / 3.5;
+                float wave = sin(vWorldPosition.x * 2.5 + u_time * 1.5) * 0.1 
+                           + cos(vWorldPosition.z * 2.0 - u_time * 1.0) * 0.1;
+                
+                float t = clamp(normalizedY + wave, 0.0, 1.0);
+
+                vec3 baseColor;
+                if (t < 0.33) {
+                    baseColor = mix(u_c1, u_c2, t / 0.33);
+                } else if (t < 0.66) {
+                    baseColor = mix(u_c2, u_c3, (t - 0.33) / 0.33);
+                } else {
+                    baseColor = mix(u_c3, u_c4, (t - 0.66) / 0.34);
+                }
+
+                vec3 lightDir = normalize(vec3(1.0, 1.5, 1.0));
+                float diff = max(dot(vNormal, lightDir), 0.0);
+                float ambient = 0.35;
+                baseColor *= (ambient + diff * 0.65);
+
+                vec3 viewDir = normalize(cameraPosition - vWorldPosition);
+                float fresnel = 1.0 - max(dot(viewDir, vNormal), 0.0);
+                fresnel = pow(fresnel, 2.4);
+                baseColor += fresnel * u_c4 * 0.35;
+
+                gl_FragColor = vec4(baseColor, 1.0);
+            }
+        `;
+
+        const auroraMaterial = new THREE.ShaderMaterial({
+            uniforms: auroraUniforms,
+            vertexShader: vertexShader,
+            fragmentShader: fragmentShader,
+            transparent: true,
+            side: THREE.DoubleSide
+        });
+
+        // --- Geometric Architecture (Curved Edges & Tapering) ---
+        const layersData = [
+            { h: 0.8, wB: 5.0, wT: 3.6 }, // Base Layer
+            { h: 0.8, wB: 3.6, wT: 2.2 }, // Layer 1
+            { h: 0.8, wB: 2.2, wT: 0.8 }, // Layer 2
+            { h: 0.6, wB: 0.8, wT: 0.1 }  // Beak (Top)
+        ];
+
+        const gap = 0.02; 
+        let currentY = -1.2; 
+        const layers = [];
+
+        layersData.forEach((data) => {
+            const segments = 6;
+            const edgeRadius = 0.08; 
+            const geometry = new THREE.RoundedBoxGeometry(1, data.h, 1, segments, edgeRadius);
+
+            const posAttr = geometry.attributes.position;
+            for (let i = 0; i < posAttr.count; i++) {
+                const y = posAttr.getY(i);
+                const normalizedLocalY = (y + data.h / 2) / data.h; 
+                const scaleXZ = THREE.MathUtils.lerp(data.wB, data.wT, normalizedLocalY);
+                posAttr.setX(i, posAttr.getX(i) * scaleXZ);
+                posAttr.setZ(i, posAttr.getZ(i) * scaleXZ);
+            }
+            
+            geometry.computeVertexNormals();
+            geometry.rotateY(Math.PI / 4);
+
+            const mesh = new THREE.Mesh(geometry, auroraMaterial);
+            const targetY = currentY + (data.h / 2);
+            mesh.userData = { targetY: targetY };
+            
+            // Initial position high up and rotated
+            mesh.position.set(0, targetY + 8, 0); 
+            mesh.rotation.y = Math.PI * 0.5; 
+            
+            pyramidGroup.add(mesh);
+            layers.push(mesh);
+
+            currentY += data.h + gap;
+        });
+
+        // --- Stacking Animation Sequence with 3-4s Rest Interval ---
+        function initLoopingAnimation() {
+            const masterTl = gsap.timeline({
+                repeat: -1,
+                repeatDelay: 0.2
+            });
+
+            // 1. Reset layers position at start of cycle
+            masterTl.add(() => {
+                layers.forEach((layer) => {
+                    layer.position.y = layer.userData.targetY + 8;
+                    layer.rotation.y = Math.PI * 0.5;
+                });
+            });
+
+            // 2. Bottom-up cascading drop-in (duration ~1.8s)
+            layers.forEach((layer, index) => {
+                masterTl.to(layer.position, {
+                    y: layer.userData.targetY,
+                    duration: 1.35,
+                    ease: "power3.out"
+                }, index * 0.22);
+
+                masterTl.to(layer.rotation, {
+                    y: 0,
+                    duration: 1.35,
+                    ease: "power3.out"
+                }, index * 0.22);
+            });
+
+            // 3. Stays fully stacked and floating together for 3.5 seconds
+            masterTl.to({}, { duration: 3.5 });
+
+            // 4. Reverse peel: layers lift up smoothly back to the sky (duration ~0.9s)
+            const reversed = [...layers].reverse();
+            reversed.forEach((layer, revIdx) => {
+                masterTl.to(layer.position, {
+                    y: layer.userData.targetY + 8,
+                    duration: 0.75,
+                    ease: "power2.in"
+                }, "-=" + (revIdx === 0 ? "0" : "0.6"));
+
+                masterTl.to(layer.rotation, {
+                    y: Math.PI * 0.5,
+                    duration: 0.75,
+                    ease: "power2.in"
+                }, "<");
+            });
+
+            // 5. Short 0.3s pause before next drop-in
+            masterTl.to({}, { duration: 0.3 });
+        }
+
+        // Slight delay before first cycle starts
+        setTimeout(initLoopingAnimation, 250);
+
+        // --- Render Loop ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const elapsedTime = clock.getElapsedTime();
+            auroraUniforms.u_time.value = elapsedTime;
+            pyramidGroup.rotation.y = elapsedTime * 0.28;
+            composer.render();
+        }
+
+        animate();
+
+        // --- Resize Handler ---
+        window.addEventListener('resize', () => {
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+        });
+    </script>
+</body>
+</html>

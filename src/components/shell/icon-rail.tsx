@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { AnimatedLogo } from "@/components/ui/animated-logo";
 
 const railItems = [
   {
@@ -54,9 +55,9 @@ export function IconRail() {
         <Link
           href="/home"
           aria-label="BaseBuildStack home"
-          className="w-10 h-10 rounded-[12px] bg-[var(--accent-grad)] text-white font-bold font-mono text-[16px] flex items-center justify-center border border-white/20 shadow-[0_0_16px_rgba(94,78,240,0.5)]"
+          className="flex items-center justify-center hover:scale-105 transition-transform"
         >
-          B
+          <AnimatedLogo size={40} />
         </Link>
 
         {/* Primary nav icons */}

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { Avatar } from "@/components/ui/avatar";
+import { AnimatedLogo } from "@/components/ui/animated-logo";
 
 export interface TopBarProps {
   title?: string;
@@ -30,7 +31,7 @@ export function TopBar({ title, showBack = false }: TopBarProps) {
   return (
     <header className="sticky top-0 z-30 flex items-center justify-between h-14 px-4 sm:px-6 bg-[#0d0f17]/90 backdrop-blur-xl border-b border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.5)] transition-colors">
       <div className="flex items-center gap-3">
-        {showBack && (
+        {showBack ? (
           <button
             onClick={() => window.history.back()}
             aria-label="Go back"
@@ -46,6 +47,10 @@ export function TopBar({ title, showBack = false }: TopBarProps) {
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
           </button>
+        ) : (
+          <Link href="/home" className="sm:hidden flex items-center justify-center">
+            <AnimatedLogo size={30} />
+          </Link>
         )}
         <h1 className="font-display text-[17px] sm:text-[19px] font-bold text-[var(--text)] tracking-tight">
           {getPageTitle()}
