@@ -53,6 +53,16 @@ export function TopBar({ title, showBack = false }: TopBarProps) {
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3">
+        {/* Current Streak Indicator (Prominent across all pages) */}
+        <div
+          title="Current Streak: 4 days"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-amber-500/35 bg-amber-500/10 text-xs font-mono font-semibold text-amber-400 shadow-[0_0_14px_rgba(245,158,11,0.25)] select-none"
+        >
+          <span className="text-sm animate-pulse">🔥</span>
+          <span className="font-bold text-white">4</span>
+          <span className="text-[10px] text-amber-400/80 uppercase tracking-wider hidden sm:inline">DAY STREAK</span>
+        </div>
+
         {/* Search trigger on lg+ */}
         <button
           type="button"

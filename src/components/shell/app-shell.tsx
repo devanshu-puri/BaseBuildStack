@@ -6,7 +6,6 @@ import { TopBar } from "./top-bar";
 import { BottomNav } from "./bottom-nav";
 import { IconRail } from "./icon-rail";
 import { SidebarNav } from "./sidebar-nav";
-import { ContextPanel } from "./context-panel";
 
 export interface AppShellProps {
   children: React.ReactNode;
@@ -36,18 +35,15 @@ export function AppShell({ children }: AppShellProps) {
           <TopBar />
         </React.Suspense>
 
-        {/* Flexible Center Content + XL Context Panel */}
+        {/* Flexible Center Content (Expanded without cramped right panel) */}
         <div className="flex-1 flex justify-center w-full min-w-0">
           <main
             id="main-content"
             tabIndex={-1}
-            className="flex-1 w-full max-w-[1040px] px-4 sm:px-6 lg:px-8 py-6 pb-[calc(108px+env(safe-area-inset-bottom))] sm:pb-12 outline-none min-w-0"
+            className="flex-1 w-full max-w-6xl px-4 sm:px-6 lg:px-8 py-6 pb-[calc(108px+env(safe-area-inset-bottom))] sm:pb-12 outline-none min-w-0"
           >
             {children}
           </main>
-
-          {/* xl only: 320px Context Panel */}
-          <ContextPanel />
         </div>
       </div>
 
