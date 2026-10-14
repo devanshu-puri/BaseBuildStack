@@ -249,7 +249,8 @@ export default function Module3DiscoveryPage() {
       const start = getCenter(bottomNode, containerRect);
       const end = getCenter(topNode, containerRect);
 
-      const offset = i % 2 === 0 ? 90 : -90;
+      const maxOffset = Math.min(80, Math.max(35, containerRect.width * 0.18));
+      const offset = i % 2 === 0 ? maxOffset : -maxOffset;
       const cp1X = start.x + offset;
       const cp1Y = start.y + (end.y - start.y) * 0.4;
       const cp2X = end.x - offset;
@@ -351,14 +352,60 @@ export default function Module3DiscoveryPage() {
 
       // 4. Dwell / Hold logic: 15% dwell time at start and end of every path
       let newActive = -1;
-      if (frac < 0.15) newActive = idx; // Top Hold
-      else if (frac > 0.85) newActive = idx + 1; // Bottom Hold
+      if (frac < 0.2) newActive = idx; // Dwell at start card
+      else if (frac > 0.8) newActive = idx + 1; // Dwell at next card
       else newActive = -1; // Travelling between cards
 
       updateCards(newActive);
     },
     [getPos, updateCards]
   );
+
+  // Precision card-based viewport focus tracker (100% synchronized on mobile and desktop)
+  const updateScrollP = useCallback(() => {
+    const nodes = nodeRefs.current;
+    const N = nodes.length;
+    if (N < 2) return;
+
+    // The user's natural focus line (45% down the viewport)
+    const targetY = window.innerHeight * 0.45;
+
+    // Collect viewport centers of all 6 cards
+    const centers: number[] = [];
+    for (let i = 0; i < N; i++) {
+      const node = nodes[i];
+      if (!node) {
+        centers.push(0);
+        continue;
+      }
+      const r = node.getBoundingClientRect();
+      centers.push(r.top + r.height / 2);
+    }
+
+    // 1. Above Origin
+    if (targetY <= centers[0]) {
+      targetP.current = 0;
+      return;
+    }
+
+    // 2. Below final Checkpoint
+    if (targetY >= centers[N - 1]) {
+      targetP.current = N - 1;
+      return;
+    }
+
+    // 3. Interpolate between Card i and Card i + 1
+    for (let i = 0; i < N - 1; i++) {
+      const y0 = centers[i];
+      const y1 = centers[i + 1];
+      if (targetY >= y0 && targetY <= y1) {
+        const dist = y1 - y0;
+        const frac = dist > 0 ? (targetY - y0) / dist : 0;
+        targetP.current = i + frac;
+        return;
+      }
+    }
+  }, []);
 
   // Initialize SVG Trail Particles (6 particles)
   useEffect(() => {
@@ -381,40 +428,31 @@ export default function Module3DiscoveryPage() {
   useEffect(() => {
     const timer = setTimeout(() => {
       drawPaths();
-      render(0, nodeRefs.current.length);
+      updateScrollP();
+      currentP.current = targetP.current;
+      render(currentP.current, nodeRefs.current.length);
     }, 150);
 
     const onResize = () => {
       drawPaths();
+      updateScrollP();
       render(currentP.current, nodeRefs.current.length);
     };
     window.addEventListener("resize", onResize);
 
-    // Scroll listener mapping container progress to P: [0 .. N - 1]
     const onScroll = () => {
-      if (!containerRef.current) return;
-      const rect = containerRef.current.getBoundingClientRect();
-      const windowHeight = window.innerHeight;
-
-      // start: container top reaches 30% of viewport
-      // end: container bottom reaches 85% of viewport
-      const startY = windowHeight * 0.3;
-      const endY = windowHeight * 0.85;
-      const totalDist = rect.height - (endY - startY);
-      const currentScroll = startY - rect.top;
-      const rawProgress = Math.max(0, Math.min(1, currentScroll / Math.max(1, totalDist)));
-      targetP.current = rawProgress * (nodeRefs.current.length - 1);
+      updateScrollP();
     };
-
     window.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
+    window.addEventListener("touchmove", onScroll, { passive: true });
 
-    // 60fps/120fps smooth scrub interpolation loop (matching GSAP scrub: 0.1)
+    // 60fps/120fps smooth scrub interpolation loop
     let rafId: number;
     const loop = () => {
+      updateScrollP();
       const diff = targetP.current - currentP.current;
-      if (Math.abs(diff) > 0.0005) {
-        currentP.current += diff * 0.15;
+      if (Math.abs(diff) > 0.0002) {
+        currentP.current += diff * 0.22;
         render(currentP.current, nodeRefs.current.length);
       }
       rafId = requestAnimationFrame(loop);
@@ -425,9 +463,10 @@ export default function Module3DiscoveryPage() {
       clearTimeout(timer);
       window.removeEventListener("resize", onResize);
       window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("touchmove", onScroll);
       cancelAnimationFrame(rafId);
     };
-  }, [drawPaths, render]);
+  }, [drawPaths, render, updateScrollP]);
 
   // Lessons inside the selected track modal
   const modalLessons = selectedTrackForChapters
