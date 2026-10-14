@@ -721,25 +721,6 @@ export default function Module3DiscoveryPage() {
           })}
         </div>
 
-        {/* Trail Terminus Footer */}
-        <div className="flex flex-col items-center justify-center space-y-3 pt-24 text-center">
-          <div className="w-9 h-9 rounded-xl border border-purple-500/40 bg-[#0d0e14] flex items-center justify-center shadow-[0_0_20px_rgba(168,85,247,0.3)]">
-            <span className="text-base">🎯</span>
-          </div>
-          <div className="space-y-1 max-w-sm">
-            <h4 className="font-display text-base font-bold text-white">Curriculum Complete</h4>
-            <p className="font-ui text-xs text-[var(--text-muted)]">
-              You&apos;ve tracked all checkpoints. Enter the Spaced Repetition queue to lock in
-              mastery.
-            </p>
-          </div>
-          <Link
-            href="/m3/retest"
-            className="px-4 py-2 rounded-full bg-[var(--accent-grad)] text-white text-xs font-mono font-bold shadow-[0_0_20px_rgba(168,85,247,0.4)] hover:brightness-110 transition-all"
-          >
-            Open Retest Queue (SM-2) &rarr;
-          </Link>
-        </div>
       </div>
 
       {/* -------------------------------------------------------------------- */}
