@@ -4,6 +4,16 @@ import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
 import type { Provider } from "next-auth/providers";
 
+// Ensure AUTH_URL is set so Auth.js never defaults to localhost:10000 on reverse proxies
+if (!process.env.AUTH_URL) {
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    const raw = process.env.NEXT_PUBLIC_APP_URL.trim();
+    process.env.AUTH_URL = raw.startsWith("http") ? raw : `https://${raw}`;
+  } else if (process.env.NODE_ENV === "production") {
+    process.env.AUTH_URL = "https://basebuildstack.onrender.com";
+  }
+}
+
 const providers: Provider[] = [];
 
 if (process.env.AUTH_GITHUB_ID && process.env.AUTH_GITHUB_SECRET) {
@@ -30,12 +40,15 @@ providers.push(
     name: "Demo / Dev Account",
     credentials: {
       email: { label: "Email", type: "email" },
+      name: { label: "Name", type: "text" },
     },
     async authorize(credentials) {
       const email = (credentials?.email as string) || "demo@basebuildstack.internal";
+      const name = (credentials?.name as string) || (email.split("@")[0] || "Demo Candidate");
+      const safeId = "u_" + email.toLowerCase().replace(/[^a-z0-9]/g, "_").slice(0, 32);
       return {
-        id: "u_demo_candidate_01",
-        name: "Demo Candidate",
+        id: safeId,
+        name,
         email,
         image: null,
       };
@@ -50,17 +63,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
-  },
-  cookies: {
-    sessionToken: {
-      name: process.env.NODE_ENV === "production" ? "__Secure-authjs.session-token" : "authjs.session-token",
-      options: {
-        httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-        secure: process.env.NODE_ENV === "production",
-      },
-    },
   },
   callbacks: {
     jwt({ token, user }) {

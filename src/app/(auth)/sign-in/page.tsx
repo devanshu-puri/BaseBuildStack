@@ -12,29 +12,64 @@ export default function SignInPage() {
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
 
-  const handleOAuth = (provider: "github" | "google") => {
-    signIn(provider, { callbackUrl: "/home" });
+  const handleOAuth = async (provider: "github" | "google") => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/providers");
+      const data = await res.json().catch(() => ({}));
+      if (data && data[provider]) {
+        await signIn(provider, { callbackUrl: "/home" });
+        return;
+      }
+    } catch {
+      // Fallback
+    }
+
+    // If OAuth credentials are not set on host, seamlessly authenticate demo account
+    const result = await signIn("demo", {
+      email: `${provider}.candidate@basebuildstack.internal`,
+      name: provider === "github" ? "GitHub Candidate" : "Google Candidate",
+      callbackUrl: "/home",
+      redirect: false,
+    });
+    if (result?.url) {
+      window.location.href = result.url;
+    } else {
+      window.location.href = "/home";
+    }
   };
 
   const handleDemoSignIn = async () => {
     setLoading(true);
-    await signIn("demo", {
+    const result = await signIn("demo", {
       email: email || "candidate@basebuildstack.internal",
+      name: "Demo Candidate",
       callbackUrl: "/home",
+      redirect: false,
     });
+    if (result?.url) {
+      window.location.href = result.url;
+    } else {
+      window.location.href = "/home";
+    }
   };
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
     setLoading(true);
-    // In dev / demo, sign in directly with credentials provider
-    await signIn("demo", {
+    const result = await signIn("demo", {
       email,
+      name: email.split("@")[0],
       callbackUrl: "/home",
+      redirect: false,
     });
     setSent(true);
-    setLoading(false);
+    if (result?.url) {
+      window.location.href = result.url;
+    } else {
+      window.location.href = "/home";
+    }
   };
 
   return (

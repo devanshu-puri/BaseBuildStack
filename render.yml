@@ -20,10 +20,9 @@ services:
         generateValue: true
       - key: AUTH_TRUST_HOST
         value: "true"
+      - key: AUTH_URL
+        value: https://basebuildstack.onrender.com
       - key: ENCRYPTION_KEY
         generateValue: true
       - key: NEXT_PUBLIC_APP_URL
-        fromService:
-          type: web
-          name: basebuildstack
-          property: host
+        value: https://basebuildstack.onrender.com

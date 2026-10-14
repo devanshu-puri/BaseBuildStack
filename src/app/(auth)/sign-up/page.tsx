@@ -22,10 +22,17 @@ export default function SignUpPage() {
     e.preventDefault();
     if (!email) return;
     setLoading(true);
-    await signIn("demo", {
+    const result = await signIn("demo", {
       email,
+      name: email.split("@")[0],
       callbackUrl: "/home",
+      redirect: false,
     });
+    if (result?.url) {
+      window.location.href = result.url;
+    } else {
+      window.location.href = "/home";
+    }
   };
 
   return (
