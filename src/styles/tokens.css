@@ -1,0 +1,127 @@
+:root {
+  /* Fonts (set by next/font in root layout) */
+  --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+  --font-ui:      var(--font-geist), var(--font-sans), Inter, ui-sans-serif, system-ui, sans-serif;
+  --font-mono:    var(--font-geist-mono), var(--font-mono-fallback), "JetBrains Mono", ui-monospace, monospace;
+
+  /* Aurora hues (atmosphere only) */
+  --aurora-violet: #6C4DFF;
+  --aurora-azure:  #2BB7FF;
+  --aurora-mint:   #2EE6C5;
+  --aurora-rose:   #FF5FA2;
+
+  /* Accent (the one action colour: indigo) */
+  --accent:        #5E4EF0;
+  --accent-hover:  #7061FF;
+  --accent-bright: #9C8FFF;
+  --on-accent:     #FFFFFF;
+  --accent-grad:   linear-gradient(135deg, #5E4EF0 0%, #3D5AF1 100%);
+  --aurora-text-grad: linear-gradient(90deg, var(--aurora-violet), var(--aurora-azure), var(--aurora-mint));
+  --progress-grad: linear-gradient(90deg, var(--accent), var(--aurora-azure), var(--aurora-mint));
+
+  /* Semantic */
+  --state-running: #FFB547;
+  --state-waiting: #5B8CFF;
+  --state-done:    #34D399;
+  --state-repeat:  #A78BFA;
+
+  /* Radii & timing */
+  --r-xs: 6px;
+  --r-sm: 10px;
+  --r-md: 16px;
+  --r-lg: 24px;
+  --r-bezel: 28px;
+  --r-pill: 9999px;
+  --ease: cubic-bezier(.2, .8, .2, 1);
+}
+
+/* ---------- DARK (default) ---------- */
+:root,
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg-base: #07080F;
+  --bg-raised: #0D0F1A;
+  --surface-solid: #12141F;
+  --glass: rgba(255, 255, 255, 0.05);
+  --glass-strong: rgba(255, 255, 255, 0.08);
+  --glass-subtle: rgba(255, 255, 255, 0.03);
+  --border: rgba(255, 255, 255, 0.09);
+  --border-strong: rgba(255, 255, 255, 0.18);
+  --rim: rgba(255, 255, 255, 0.14);
+  --text: #F4F5FB;
+  --text-2: #B4B8CC;
+  --text-3: #8A90AA;
+  --good-bg: rgba(52, 211, 153, 0.14);
+  --good-fg: #6EE7B7;
+  --bad-bg: rgba(255, 107, 107, 0.14);
+  --bad-fg: #FF8A8A;
+  --aurora-opacity: 0.22;
+  --aurora-blend: screen;
+  --blob-1: var(--aurora-violet);
+  --blob-2: var(--aurora-azure);
+  --blob-3: var(--aurora-mint);
+  --code-bg: #0B0D17;
+  --glow-accent: 0 12px 40px -12px rgba(94, 78, 240, 0.7);
+
+  /* Compatibility aliases mapping to aurora tokens */
+  --surface-canvas: var(--bg-base);
+  --surface-card: var(--surface-solid);
+  --surface-card-subtle: var(--bg-raised);
+  --border-subtle: var(--border);
+  --border-focus: var(--accent-bright);
+  --text-primary: var(--text);
+  --text-secondary: var(--text-2);
+  --text-muted: var(--text-3);
+  --text-on-accent: var(--on-accent);
+  --brand-accent: var(--accent);
+  --brand-accent-hover: var(--accent-hover);
+  --brand-accent-subtle: color-mix(in srgb, var(--accent) 18%, transparent);
+  --state-good-bg: var(--good-bg);
+  --state-good-fg: var(--good-fg);
+  --state-bad-bg: var(--bad-bg);
+  --state-bad-fg: var(--bad-fg);
+}
+
+/* ---------- LIGHT ("Pearl") ---------- */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg-base: #F4F3FA;
+  --bg-raised: #FFFFFF;
+  --surface-solid: #FFFFFF;
+  --glass: rgba(255, 255, 255, 0.68);
+  --glass-strong: rgba(255, 255, 255, 0.85);
+  --glass-subtle: rgba(255, 255, 255, 0.45);
+  --border: rgba(20, 21, 42, 0.08);
+  --border-strong: rgba(20, 21, 42, 0.16);
+  --rim: rgba(255, 255, 255, 0.9);
+  --text: #14152A;
+  --text-2: #4A4E69;
+  --text-3: #666B86;
+  --accent-bright: #5E4EF0;
+  --good-bg: #DDF5EA;
+  --good-fg: #0F7A52;
+  --bad-bg: #FDE4E4;
+  --bad-fg: #B3382A;
+  --aurora-opacity: 0.38;
+  --aurora-blend: multiply;
+  --code-bg: #0B0D17;
+  --glow-accent: 0 12px 32px -14px rgba(94, 78, 240, 0.45);
+
+  /* Compatibility aliases mapping to pearl light tokens */
+  --surface-canvas: var(--bg-base);
+  --surface-card: var(--bg-raised);
+  --surface-card-subtle: #ECEBF5;
+  --border-subtle: var(--border);
+  --border-focus: var(--accent);
+  --text-primary: var(--text);
+  --text-secondary: var(--text-2);
+  --text-muted: var(--text-3);
+  --text-on-accent: #FFFFFF;
+  --brand-accent: var(--accent);
+  --brand-accent-hover: var(--accent-hover);
+  --brand-accent-subtle: color-mix(in srgb, var(--accent) 14%, transparent);
+  --state-good-bg: var(--good-bg);
+  --state-good-fg: var(--good-fg);
+  --state-bad-bg: var(--bad-bg);
+  --state-bad-fg: var(--bad-fg);
+}

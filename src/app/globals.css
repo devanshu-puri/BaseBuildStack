@@ -1,0 +1,25 @@
+@import "tailwindcss";
+@import "../styles/tokens.css";
+@import "../styles/effects.css";
+
+@layer base {
+  body {
+    background-color: var(--bg-base);
+    color: var(--text);
+    font-family: var(--font-ui), var(--font-sans), system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  code, pre, kbd {
+    font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  }
+
+  /* Accessibility focus ring */
+  *:focus-visible {
+    outline: 2px solid var(--accent-bright);
+    outline-offset: 2px;
+  }
+}
