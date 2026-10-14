@@ -1,41 +1,21 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-
-const navItems = [
-  {
-    name: "Home",
-    href: "/home",
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-      </svg>
-    ),
-  },
-  {
-    name: "Progress",
-    href: "/progress",
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-      </svg>
-    ),
-  },
-  {
-    name: "Bookmarks",
-    href: "/bookmarks",
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-      </svg>
-    ),
-  },
-];
+import { usePathname, useRouter } from "next/navigation";
+import Dock, { type DockItemData } from "@/components/ui/dock";
+import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  Home01Icon,
+  AlgorithmIcon,
+  Brain02Icon,
+  BookOpen01Icon,
+  Analytics01Icon,
+  Bookmark01Icon,
+} from "@hugeicons/core-free-icons";
 
 export function BottomNav() {
   const pathname = usePathname() || "";
+  const router = useRouter();
 
   // Hide FloatingDock on focus modes per UI_SPEC §7 so BottomCTA can take bottom slot
   const isFocusScreen =
@@ -58,26 +38,94 @@ export function BottomNav() {
     return null;
   }
 
+  const items: DockItemData[] = [
+    {
+      icon: <HugeiconsIcon icon={Home01Icon} size={20} strokeWidth={1.8} />,
+      label: "Home",
+      href: "/home",
+      active: pathname === "/home" || pathname === "/",
+      menu: [
+        { label: "Dashboard", onClick: () => router.push("/home") },
+        { label: "Settings", onClick: () => router.push("/settings") },
+      ],
+    },
+    {
+      icon: <HugeiconsIcon icon={AlgorithmIcon} size={20} strokeWidth={1.8} />,
+      label: "M1: DSA Rounds",
+      href: "/dsa",
+      active: pathname.startsWith("/dsa") || pathname.startsWith("/m1"),
+      menu: [
+        { label: "DSA Overview", onClick: () => router.push("/dsa") },
+        { separator: true },
+        { label: "Pattern Blitz (45s)", onClick: () => router.push("/dsa/blitz") },
+        { label: "Bug Audit Mode", onClick: () => router.push("/dsa/bug-audit") },
+        { label: "Open-Ended Drills", onClick: () => router.push("/dsa/open-ended") },
+      ],
+    },
+    {
+      icon: <HugeiconsIcon icon={Brain02Icon} size={20} strokeWidth={1.8} />,
+      label: "M2: Skill Diagnostic",
+      href: "/quiz",
+      active: pathname.startsWith("/quiz") || pathname.startsWith("/m2"),
+      menu: [
+        { label: "Skill Diagnostic Hub", onClick: () => router.push("/quiz") },
+        { separator: true },
+        { label: "Quick Quiz (5m)", onClick: () => router.push("/quiz/quick") },
+        { label: "Skill Heatmap", onClick: () => router.push("/quiz/heatmap") },
+        { label: "Resume Extraction", onClick: () => router.push("/quiz/onboarding") },
+      ],
+    },
+    {
+      icon: <HugeiconsIcon icon={BookOpen01Icon} size={20} strokeWidth={1.8} />,
+      label: "M3: Tech Bites",
+      href: "/m3",
+      active: pathname.startsWith("/m3"),
+      menu: [
+        { label: "Scrollytelling Path", onClick: () => router.push("/m3") },
+        { separator: true },
+        { label: "Spaced Mastery Retests", onClick: () => router.push("/m3/retest") },
+      ],
+    },
+    {
+      icon: <HugeiconsIcon icon={Analytics01Icon} size={20} strokeWidth={1.8} />,
+      label: "Progress",
+      href: "/progress",
+      active: pathname.startsWith("/progress"),
+      menu: [
+        { label: "Progress & Streaks", onClick: () => router.push("/progress") },
+        { label: "Metacognitive Insights", onClick: () => router.push("/m4/insights") },
+      ],
+    },
+    {
+      icon: <HugeiconsIcon icon={Bookmark01Icon} size={20} strokeWidth={1.8} />,
+      label: "Bookmarks",
+      href: "/bookmarks",
+      active: pathname.startsWith("/bookmarks"),
+    },
+  ];
+
   return (
     <nav
-      aria-label="Mobile primary navigation"
-      className="sm:hidden dock"
+      aria-label="Floating liquid glass dock navigation"
+      className="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-40 pointer-events-auto select-none"
     >
-      {navItems.map((item) => {
-        const isActive = pathname.startsWith(item.href);
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            aria-current={isActive ? "page" : undefined}
-            title={item.name}
-            aria-label={item.name}
-            className="group relative"
-          >
-            {item.icon}
-          </Link>
-        );
-      })}
+      <Dock
+        items={items}
+        position="bottom"
+        theme="dark"
+        baseItemSize={44}
+        magnification={62}
+        distance={160}
+        panelHeight={58}
+        gap={8}
+        roundness={1}
+        bounce={true}
+        tiles={true}
+        showLabels={true}
+        showIndicators={true}
+        accentColor="#8B7CFF"
+        className="shadow-2xl"
+      />
     </nav>
   );
 }
