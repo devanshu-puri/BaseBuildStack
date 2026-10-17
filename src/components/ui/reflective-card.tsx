@@ -703,8 +703,18 @@ const ReflectiveCard: React.FC<ReflectiveCardProps> = ({
     const camElement = camRef.current;
     if (!root || !body || !canvas || !videoElement || !camElement) return;
 
+    const isMobileOrCoarse = typeof window !== 'undefined' && (window.innerWidth < 768 || window.matchMedia?.('(pointer: coarse)').matches);
+    if (isMobileOrCoarse) {
+      canvas.style.display = 'none';
+      return;
+    }
+
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const renderer = createRenderer(canvas);
+    if (!renderer) {
+      canvas.style.display = 'none';
+      return;
+    }
     const x = { p: 0, v: 0, target: 0 };
     const y = { p: 0, v: 0, target: 0 };
     const light = { p: 0, target: 0 };
@@ -932,6 +942,7 @@ const ReflectiveCard: React.FC<ReflectiveCardProps> = ({
     const onLost = (event: Event) => {
       event.preventDefault();
       lost = true;
+      canvas.style.display = 'none';
       cancelAnimationFrame(raf);
       raf = 0;
     };

@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const BlitzProblemSchema = z.object({
   id: z.string(),
+  kind: z.enum(["problem", "concept"]).default("problem").optional(),
   title: z.string(),
   difficulty: z.enum(["easy", "medium", "hard"]),
   category: z.string(),

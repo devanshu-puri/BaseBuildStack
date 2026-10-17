@@ -269,6 +269,19 @@ const SpecularButton = React.forwardRef<HTMLButtonElement | HTMLAnchorElement, S
     const canvas = canvasRef.current;
     if (!element || !canvas) return undefined;
 
+    const isMobileOrCoarse = typeof window !== 'undefined' && (window.innerWidth < 768 || window.matchMedia?.('(pointer: coarse)').matches);
+    if (isMobileOrCoarse) {
+      canvas.style.display = 'none';
+      return undefined;
+    }
+
+    const onLost = (e: Event) => {
+      e.preventDefault();
+      canvas.style.display = 'none';
+      cancelAnimationFrame(raf);
+    };
+    canvas.addEventListener('webglcontextlost', onLost, false);
+
     const gl = canvas.getContext('webgl2', {
       alpha: true,
       premultipliedAlpha: true,
@@ -276,10 +289,18 @@ const SpecularButton = React.forwardRef<HTMLButtonElement | HTMLAnchorElement, S
       depth: false,
       stencil: false
     });
-    if (!gl) return undefined;
+    if (!gl) {
+      canvas.style.display = 'none';
+      canvas.removeEventListener('webglcontextlost', onLost);
+      return undefined;
+    }
 
     const program = link(gl);
-    if (!program) return undefined;
+    if (!program) {
+      canvas.style.display = 'none';
+      canvas.removeEventListener('webglcontextlost', onLost);
+      return undefined;
+    }
 
     const uniforms: Record<string, WebGLUniformLocation | null> = {};
     for (const name of UNIFORMS) uniforms[name] = gl.getUniformLocation(program, name);
@@ -472,6 +493,7 @@ const SpecularButton = React.forwardRef<HTMLButtonElement | HTMLAnchorElement, S
       window.removeEventListener('pointercancel', onPointerEnd);
       document.documentElement.removeEventListener('pointerleave', onPointerLeave);
       element.removeEventListener('pointerdown', onPointerDown as unknown as EventListener);
+      canvas.removeEventListener('webglcontextlost', onLost);
       gl.deleteBuffer(buffer);
       gl.deleteVertexArray(vao);
       gl.deleteProgram(program);

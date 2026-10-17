@@ -16,9 +16,18 @@ export function AuroraBackground({ intensity: propIntensity }: AuroraBackgroundP
   const { resolvedTheme } = useTheme();
   const [isPaused, setIsPaused] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    const checkMobile = () => {
+      if (typeof window !== "undefined") {
+        setIsMobile(window.innerWidth < 768 || window.matchMedia("(pointer: coarse)").matches);
+      }
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
   // Compute route-driven intensity when not explicitly provided
@@ -79,13 +88,41 @@ export function AuroraBackground({ intensity: propIntensity }: AuroraBackgroundP
     ? 0.25
     : 0.42;
 
+  // On mobile devices, use the lightweight, crash-proof CSS living Aurora blades
+  // to avoid WebGL shader arithmetic overflows, high battery drain, and canvas whiteout.
+  if (mounted && isMobile) {
+    return (
+      <div
+        className="aurora fixed inset-0 -z-10 pointer-events-none overflow-hidden select-none"
+        data-intensity={computedIntensity}
+        data-paused={isPaused}
+        style={{ backgroundColor: isLight ? "#F8F9FC" : "#07080a" }}
+        aria-hidden="true"
+      >
+        <div className="blades-container" style={{ opacity: isLight ? 0.35 : undefined }}>
+          <div className="light-blade blade-1" />
+          <div className="light-blade blade-2" />
+          <div className="light-blade blade-3" />
+        </div>
+        <div
+          className="aurora-vignette"
+          style={{
+            background: isLight
+              ? "radial-gradient(ellipse 92% 84% at 50% 45%, transparent 18%, rgba(248, 249, 252, 0.4) 55%, rgba(248, 249, 252, 0.85) 80%, #F8F9FC 100%)"
+              : undefined,
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div
       className="fixed inset-0 -z-10 pointer-events-none overflow-hidden select-none"
       style={{ backgroundColor: isLight ? "#F8F9FC" : "#07080a" }}
       aria-hidden="true"
     >
-      {mounted && (
+      {mounted && !isMobile && (
         <PatternWaves
           preset="silk"
           pattern="dot"

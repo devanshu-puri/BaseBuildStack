@@ -232,7 +232,11 @@ uvec3 scramble(uvec3 v) {
 }
 
 vec3 lattice(vec3 corner) {
-  uvec3 h = scramble(uvec3(ivec3(corner) + 4096));
+  vec3 wrapped = mod(corner, 256.0);
+  if (wrapped.x < 0.0) wrapped.x += 256.0;
+  if (wrapped.y < 0.0) wrapped.y += 256.0;
+  if (wrapped.z < 0.0) wrapped.z += 256.0;
+  uvec3 h = scramble(uvec3(ivec3(wrapped)));
   return vec3(h & 65535u) / 32767.5 - 1.0;
 }
 
@@ -295,16 +299,17 @@ void main() {
   float hx = (heightAt(css + vec2(e, 0.0)) - heightAt(css - vec2(e, 0.0))) / (2.0 * e);
   float hy = (heightAt(css + vec2(0.0, e)) - heightAt(css - vec2(0.0, e))) / (2.0 * e);
   vec2 grad = vec2(hx, hy) * uUnit * uDepth * 0.4;
-  vec3 n = normalize(vec3(-grad, 1.0));
+  float gradLen = length(grad);
+  vec3 n = gradLen > 1e-5 ? normalize(vec3(-grad, 1.0)) : vec3(0.0, 0.0, 1.0);
 
   float diffuse = clamp(dot(n, uLight), 0.0, 1.0);
   vec3 halfway = normalize(uLight + vec3(0.0, 0.0, 1.0));
-  float spec = pow(clamp(dot(n, halfway), 0.0, 1.0), 160.0) * uShine * 1.15;
+  float spec = pow(max(clamp(dot(n, halfway), 0.0, 1.0), 0.0001), 160.0) * uShine * 1.15;
   float hollow = 0.7 + 0.3 * clamp(h * 0.5 + 0.5, 0.0, 1.0);
   float tone = clamp(diffuse * hollow * 0.78 + spec, 0.0, 1.0);
   tone = clamp((tone - 0.42) * uContrast + 0.42, 0.0, 1.0);
 
-  float level = uInk > 0.5 ? pow(clamp(1.0 - tone / 0.46, 0.0, 1.0), 2.4) * 0.72 : pow(tone, 2.2);
+  float level = uInk > 0.5 ? pow(max(clamp(1.0 - tone / 0.46, 0.0, 1.0), 0.0001), 2.4) * 0.72 : pow(max(tone, 0.0001), 2.2);
   float emphasis = uInk > 0.5 ? smoothstep(0.55, 0.95, level) : clamp(spec * 1.6, 0.0, 1.0);
 
   float fade = 1.0;
@@ -324,7 +329,13 @@ void main() {
 
   float alpha = uOpacity * fade * appear * (0.22 + 0.78 * level);
   float lift = clamp(h * uDepth * 0.42, -0.48, 0.48);
-  fragColor = vec4(level, alpha, emphasis, lift + 0.5);
+  vec4 fieldOut = vec4(level, alpha, emphasis, lift + 0.5);
+  if (isnan(fieldOut.r) || isnan(fieldOut.g) || isnan(fieldOut.b) || isnan(fieldOut.a) ||
+      isinf(fieldOut.r) || isinf(fieldOut.g) || isinf(fieldOut.b) || isinf(fieldOut.a)) {
+    fragColor = vec4(0.0, 0.0, 0.0, 0.5);
+  } else {
+    fragColor = clamp(fieldOut, 0.0, 1.0);
+  }
 }
 `;
 
@@ -381,7 +392,7 @@ float box(vec2 p, vec2 b, float r) {
 
 float coverage(vec2 local, float level) {
   float span = uPitch.y * uMarkSize;
-  float area = max(sqrt(level), 0.14);
+  float area = max(sqrt(max(level, 0.0)), 0.14);
   if (uPattern == 0) {
     return clamp(0.5 - (length(local) - 0.5 * span * area), 0.0, 1.0);
   }
@@ -449,7 +460,13 @@ void main() {
       }
     }
   }
-  fragColor = ink + background * (1.0 - ink.a);
+  vec4 result = ink + background * (1.0 - ink.a);
+  if (isnan(result.r) || isnan(result.g) || isnan(result.b) || isnan(result.a) ||
+      isinf(result.r) || isinf(result.g) || isinf(result.b) || isinf(result.a)) {
+    fragColor = background;
+  } else {
+    fragColor = clamp(result, 0.0, 1.0);
+  }
 }
 `;
 
@@ -538,6 +555,7 @@ export default function PatternWaves({
     canvas.style.display = 'block';
     canvas.style.width = '100%';
     canvas.style.height = '100%';
+    canvas.style.backgroundColor = 'transparent';
     canvas.setAttribute('aria-hidden', 'true');
     container.appendChild(canvas);
 
@@ -671,6 +689,16 @@ export default function PatternWaves({
     let atlasKey = '';
     const pointer = { x: 0, y: 0, inside: false, placed: false, lastX: 0, lastY: 0, burst: 0 };
 
+    const clearRipple = () => {
+      if (!ripple) return;
+      [ripple.read, ripple.write].forEach(target => {
+        renderer.bindFramebuffer(target);
+        gl.viewport(0, 0, target.width, target.height);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+      });
+      renderer.bindFramebuffer();
+    };
+
     const buildRipple = () => {
       if (!floatTargets) return;
       const w = clamp(Math.ceil(width / RIPPLE_CELL), 4, 512);
@@ -682,16 +710,7 @@ export default function PatternWaves({
       }
       ripple = { width: w, height: h, read: rippleTargetFor(w, h), write: rippleTargetFor(w, h) };
       rippleLive = false;
-    };
-
-    const clearRipple = () => {
-      if (!ripple) return;
-      [ripple.read, ripple.write].forEach(target => {
-        renderer.bindFramebuffer(target);
-        gl.viewport(0, 0, target.width, target.height);
-        gl.clear(gl.COLOR_BUFFER_BIT);
-      });
-      renderer.bindFramebuffer();
+      clearRipple();
     };
 
     const refreshAtlas = (s: any) => {

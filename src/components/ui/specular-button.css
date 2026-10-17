@@ -89,6 +89,13 @@
   width: calc(100% + 48px);
   height: calc(100% + 48px);
   pointer-events: none;
+  background: transparent !important;
+}
+
+@media (pointer: coarse), (max-width: 767px) {
+  .specular-button__light {
+    display: none !important;
+  }
 }
 
 .specular-button__label {

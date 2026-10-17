@@ -41,6 +41,13 @@
   width: 100%;
   height: 100%;
   pointer-events: none;
+  background: transparent !important;
+}
+
+@media (pointer: coarse), (max-width: 767px) {
+  .reflective-card__canvas {
+    display: none !important;
+  }
 }
 
 .reflective-card__content {
