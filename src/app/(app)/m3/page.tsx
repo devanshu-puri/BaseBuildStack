@@ -3,10 +3,12 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { getAllLessons } from "@/content/m3/lessons";
-import { Lesson, LessonPath } from "@/content/m3/lesson-schema";
+import { LessonPath } from "@/content/m3/lesson-schema";
+import { Chip } from "@/components/ui/chip";
+import { Button } from "@/components/ui/button";
 
 // ---------------------------------------------------------------------------
-// 1. Checkpoint Track Metadata (Minimal Initial Content per user requirement)
+// 1. Checkpoint Track Metadata
 // ---------------------------------------------------------------------------
 interface TrackMeta {
   id: LessonPath;
@@ -68,7 +70,6 @@ const TRACKS: TrackMeta[] = [
   },
 ];
 
-// Helper to provide icons for chapter items
 function getLessonIcon(lessonId: string): string {
   switch (lessonId) {
     case "rag-pipeline":
@@ -119,38 +120,29 @@ function playMetallicChime(pitchMultiplier = 1) {
 
   try {
     const now = ctx.currentTime;
-    const baseFreq = 880 * pitchMultiplier;
+    const baseFreq = 587.33 * pitchMultiplier; // D5 base
+    const ratios = [1.0, 1.498, 2.0, 2.76, 4.07];
 
-    // Inharmonic partials characteristic of striking a resonant metal chime
-    const partials = [
-      { ratio: 1.0, type: "sine" as OscillatorType, gain: 0.12, decay: 0.28 },
-      { ratio: 2.76, type: "sine" as OscillatorType, gain: 0.08, decay: 0.22 },
-      { ratio: 5.4, type: "triangle" as OscillatorType, gain: 0.05, decay: 0.16 },
-      { ratio: 8.9, type: "sine" as OscillatorType, gain: 0.02, decay: 0.10 },
-    ];
-
-    const masterGain = ctx.createGain();
-    const bandpass = ctx.createBiquadFilter();
-    bandpass.type = "bandpass";
-    bandpass.frequency.setValueAtTime(2200, now);
-    bandpass.Q.setValueAtTime(3.5, now);
-
-    bandpass.connect(masterGain);
-    masterGain.connect(ctx.destination);
-
-    partials.forEach(({ ratio, type, gain, decay }) => {
+    ratios.forEach((ratio, i) => {
       const osc = ctx.createOscillator();
       const g = ctx.createGain();
+      const bandpass = ctx.createBiquadFilter();
 
-      osc.type = type;
+      bandpass.type = "bandpass";
+      bandpass.frequency.setValueAtTime(baseFreq * ratio, now);
+      bandpass.Q.setValueAtTime(14, now);
+
+      osc.type = i % 2 === 0 ? "sine" : "triangle";
       osc.frequency.setValueAtTime(baseFreq * ratio, now);
-      osc.frequency.exponentialRampToValueAtTime(baseFreq * ratio * 0.96, now + decay);
 
-      g.gain.setValueAtTime(gain, now);
+      const decay = 0.45 / (1 + i * 0.4);
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.exponentialRampToValueAtTime(0.06 / (i + 1), now + 0.004);
       g.gain.exponentialRampToValueAtTime(0.0001, now + decay);
 
       osc.connect(g);
       g.connect(bandpass);
+      bandpass.connect(ctx.destination);
 
       osc.start(now);
       osc.stop(now + decay + 0.02);
@@ -161,7 +153,7 @@ function playMetallicChime(pitchMultiplier = 1) {
 }
 
 // ---------------------------------------------------------------------------
-// 3. Module III 3D Tech Path Discovery Page
+// 3. Module III Discovery Page
 // ---------------------------------------------------------------------------
 export default function Module3DiscoveryPage() {
   const allLessons = getAllLessons();
@@ -173,19 +165,20 @@ export default function Module3DiscoveryPage() {
   const [modalEli5, setModalEli5] = useState(false);
   const [geminiModalOpen, setGeminiModalOpen] = useState(false);
 
-  // Refs for pure 3D Bezier scroll engine
+  // Layout Refs
   const containerRef = useRef<HTMLDivElement>(null);
   const svgLayerRef = useRef<SVGSVGElement>(null);
   const pathGroupRef = useRef<SVGGElement>(null);
   const trailGroupRef = useRef<SVGGElement>(null);
   const particleRef = useRef<SVGCircleElement>(null);
 
-  // 6 nodes: 0: Origin, 1..5: Checkpoints (AI, Backend, Frontend, DevOps, Core CS)
-  const nodeRefs = useRef<(HTMLDivElement | null)[]>([]);
+  // STATIC anchor elements (never transformed — eliminates jitter feedback loop)
+  const anchorRefs = useRef<(HTMLDivElement | null)[]>([]);
   const pathsRef = useRef<SVGPathElement[]>([]);
   const pathLengthsRef = useRef<number[]>([]);
   const trailsRef = useRef<SVGCircleElement[]>([]);
 
+  // Smooth scroll tracking
   const currentP = useRef(0);
   const targetP = useRef(0);
   const activeIndexRef = useRef(0);
@@ -215,16 +208,7 @@ export default function Module3DiscoveryPage() {
     }
   };
 
-  // Helper to compute node element center relative to SVG layer
-  const getCenter = useCallback((el: HTMLElement, containerRect: DOMRect) => {
-    const r = el.getBoundingClientRect();
-    return {
-      x: r.left + r.width / 2 - containerRect.left,
-      y: r.top + r.height / 2 - containerRect.top,
-    };
-  }, []);
-
-  // Construct Bezier splines connecting bottom node of card[i] to top node of card[i+1]
+  // Construct Bezier splines connecting bottom of anchor[i] to top of anchor[i+1]
   const drawPaths = useCallback(() => {
     if (!svgLayerRef.current || !containerRef.current || !pathGroupRef.current) return;
     const pathGroup = pathGroupRef.current;
@@ -236,18 +220,23 @@ export default function Module3DiscoveryPage() {
     svgLayerRef.current.style.height = `${containerHeight}px`;
     const containerRect = svgLayerRef.current.getBoundingClientRect();
 
-    const N = nodeRefs.current.length; // 6 nodes
+    const N = anchorRefs.current.length; // 6 nodes
     for (let i = 0; i < N - 1; i++) {
-      const startCard = nodeRefs.current[i];
-      const endCard = nodeRefs.current[i + 1];
-      if (!startCard || !endCard) continue;
+      const startAnchor = anchorRefs.current[i];
+      const endAnchor = anchorRefs.current[i + 1];
+      if (!startAnchor || !endAnchor) continue;
 
-      const bottomNode = startCard.querySelector(".node-point.bottom") as HTMLElement;
-      const topNode = endCard.querySelector(".node-point.top") as HTMLElement;
-      if (!bottomNode || !topNode) continue;
+      const rStart = startAnchor.getBoundingClientRect();
+      const rEnd = endAnchor.getBoundingClientRect();
 
-      const start = getCenter(bottomNode, containerRect);
-      const end = getCenter(topNode, containerRect);
+      const start = {
+        x: rStart.left + rStart.width / 2 - containerRect.left,
+        y: rStart.bottom - containerRect.top,
+      };
+      const end = {
+        x: rEnd.left + rEnd.width / 2 - containerRect.left,
+        y: rEnd.top - containerRect.top,
+      };
 
       const maxOffset = Math.min(80, Math.max(35, containerRect.width * 0.18));
       const offset = i % 2 === 0 ? maxOffset : -maxOffset;
@@ -283,9 +272,9 @@ export default function Module3DiscoveryPage() {
       pathsRef.current.push(activePath);
       pathLengthsRef.current.push(len);
     }
-  }, [getCenter]);
+  }, []);
 
-  // Compute exact coordinate on path or within card
+  // Compute exact coordinate of the ball tracker
   const getPos = useCallback((p: number, N: number) => {
     p = Math.max(0, Math.min(p, N - 1));
     const idx = Math.min(Math.floor(p), N - 2);
@@ -295,32 +284,29 @@ export default function Module3DiscoveryPage() {
     const len = pathLengthsRef.current[idx];
     if (!path || !len) return { x: 0, y: 0 };
 
-    // Segment stages:
-    // 1. [0 .. 0.35]: Inside start card (idx) - dwell delay
-    // 2. [0.35 .. 0.95]: Traveling along the Bezier wire
-    // 3. [0.95 .. 1.0]: Merged into destination card (idx + 1)
-    if (frac < 0.35) {
+    // Stage 1: [0.00 .. 0.18] — Passing across card idx (from top to bottom)
+    if (frac <= 0.18) {
       if (idx > 0 && pathsRef.current[idx - 1] && pathLengthsRef.current[idx - 1]) {
-        // Smoothly transit inside card idx from its top node to its bottom node
         const prevPath = pathsRef.current[idx - 1];
         const prevLen = pathLengthsRef.current[idx - 1];
         const topPt = prevPath.getPointAtLength(prevLen);
         const botPt = path.getPointAtLength(0);
-        const tCard = frac / 0.35;
+        const tCard = frac / 0.18;
         return {
           x: topPt.x + (botPt.x - topPt.x) * tCard,
           y: topPt.y + (botPt.y - topPt.y) * tCard,
         };
       }
-      // For origin card (idx = 0), sit at its bottom node
       return path.getPointAtLength(0);
-    } else if (frac > 0.95) {
-      // Merged at top node of destination card
+    }
+    // Stage 3: [0.82 .. 1.00] — Reached top of destination card idx + 1
+    else if (frac >= 0.82) {
       return path.getPointAtLength(len);
-    } else {
-      // Traveling on Bezier wire
-      const tt = (frac - 0.35) / 0.60;
-      return path.getPointAtLength(tt * len);
+    }
+    // Stage 2: (0.18 .. 0.82) — Traveling along the Bezier wire in open space
+    else {
+      const tWire = (frac - 0.18) / 0.64;
+      return path.getPointAtLength(tWire * len);
     }
   }, []);
 
@@ -331,7 +317,7 @@ export default function Module3DiscoveryPage() {
     activeIndexRef.current = newActive;
     setActiveCardIndex(newActive);
 
-    // Play chime when entering a valid checkpoint
+    // Play chime strictly when entering a valid checkpoint
     if (newActive > 0 && newActive !== prev && soundEnabledRef.current) {
       const pitch = 0.95 + (newActive % 5) * 0.12;
       playMetallicChime(pitch);
@@ -348,21 +334,21 @@ export default function Module3DiscoveryPage() {
       const idx = Math.min(Math.floor(P), N - 2);
       const frac = P - idx;
 
-      // 1. Draw glowing lines up to progress
+      // 1. Draw glowing line in sync with the ball tracker
       paths.forEach((p, i) => {
         if (i < idx) {
-          p.style.strokeDashoffset = "0";
+          p.style.strokeDashoffset = "0"; // fully illuminated
         } else if (i > idx) {
-          p.style.strokeDashoffset = `${pathLengths[i]}`;
+          p.style.strokeDashoffset = `${pathLengths[i]}`; // dormant
         } else {
           // Current wire (idx)
-          if (frac < 0.35) {
+          if (frac <= 0.18) {
             p.style.strokeDashoffset = `${pathLengths[i]}`;
-          } else if (frac > 0.95) {
+          } else if (frac >= 0.82) {
             p.style.strokeDashoffset = "0";
           } else {
-            const tt = (frac - 0.35) / 0.60;
-            p.style.strokeDashoffset = `${pathLengths[i] * (1 - tt)}`;
+            const tWire = (frac - 0.18) / 0.64;
+            p.style.strokeDashoffset = `${pathLengths[i] * (1 - tWire)}`;
           }
         }
       });
@@ -374,8 +360,8 @@ export default function Module3DiscoveryPage() {
         particleRef.current.setAttribute("cy", `${pt.y}`);
       }
 
-      // 3. Move trail particles (only visible when in motion on the wire)
-      const isWireTransit = frac >= 0.35 && frac <= 0.95;
+      // 3. Move trail particles (only visible during wire transit)
+      const isWireTransit = frac > 0.18 && frac < 0.82;
       const trails = trailsRef.current;
       const trailCount = trails.length;
       trails.forEach((t, i) => {
@@ -387,15 +373,15 @@ export default function Module3DiscoveryPage() {
       });
 
       // 4. Card Activation:
-      // ONLY pop when tracer merges into the card (frac >= 0.95)!
-      // Extended dwell: card stays popped while inside the card (frac <= 0.35 of current or frac >= 0.95 of prev)
+      // When ball reaches the rectangle of the card, THEN ONLY it pops out!
+      // On the wire between cards (0.18 < frac < 0.82), NEITHER card is popped.
       let newActive = -1;
-      if (frac >= 0.95) {
-        newActive = idx + 1; // Pop next card at the exact moment of merge!
-      } else if (frac <= 0.35) {
-        newActive = idx; // Dwell inside current card
+      if (frac >= 0.82) {
+        newActive = idx + 1; // Ball reached the destination card rectangle
+      } else if (frac <= 0.18) {
+        newActive = idx; // Ball is on the current card
       } else {
-        newActive = -1; // Traveling along wire: NEITHER card is popped!
+        newActive = -1; // Ball is traveling on the wire in open space
       }
 
       updateCards(newActive);
@@ -403,24 +389,23 @@ export default function Module3DiscoveryPage() {
     [getPos, updateCards]
   );
 
-  // Precision card-based viewport focus tracker (100% synchronized on mobile and desktop)
+  // Static Anchor-based viewport focus tracker (immune to card 3D transforms — zero jitter)
   const updateScrollP = useCallback(() => {
-    const nodes = nodeRefs.current;
-    const N = nodes.length;
+    const anchors = anchorRefs.current;
+    const N = anchors.length;
     if (N < 2) return;
 
-    // The user's natural focus line (48% down the viewport, near center)
+    // Viewport natural focus line (48% down the viewport)
     const targetY = window.innerHeight * 0.48;
 
-    // Collect viewport centers of all 6 cards
     const centers: number[] = [];
     for (let i = 0; i < N; i++) {
-      const node = nodes[i];
-      if (!node) {
+      const a = anchors[i];
+      if (!a) {
         centers.push(0);
         continue;
       }
-      const r = node.getBoundingClientRect();
+      const r = a.getBoundingClientRect();
       centers.push(r.top + r.height / 2);
     }
 
@@ -436,7 +421,7 @@ export default function Module3DiscoveryPage() {
       return;
     }
 
-    // 3. Interpolate between Card i and Card i + 1
+    // 3. Interpolate between Anchor i and Anchor i + 1
     for (let i = 0; i < N - 1; i++) {
       const y0 = centers[i];
       const y1 = centers[i + 1];
@@ -449,7 +434,7 @@ export default function Module3DiscoveryPage() {
     }
   }, []);
 
-  // Initialize SVG Trail Particles (6 particles)
+  // Initialize Trail Particles
   useEffect(() => {
     if (!trailGroupRef.current) return;
     const trailGroup = trailGroupRef.current;
@@ -460,7 +445,7 @@ export default function Module3DiscoveryPage() {
     for (let i = 0; i < trailCount; i++) {
       const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
       c.setAttribute("r", `${5 - i * 0.6}`);
-      c.setAttribute("fill", "#c084fc");
+      c.setAttribute("fill", "#9C8FFF");
       trailGroup.appendChild(c);
       trailsRef.current.push(c);
     }
@@ -472,13 +457,13 @@ export default function Module3DiscoveryPage() {
       drawPaths();
       updateScrollP();
       currentP.current = targetP.current;
-      render(currentP.current, nodeRefs.current.length);
-    }, 150);
+      render(currentP.current, anchorRefs.current.length);
+    }, 120);
 
     const onResize = () => {
       drawPaths();
       updateScrollP();
-      render(currentP.current, nodeRefs.current.length);
+      render(currentP.current, anchorRefs.current.length);
     };
     window.addEventListener("resize", onResize);
 
@@ -488,14 +473,14 @@ export default function Module3DiscoveryPage() {
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("touchmove", onScroll, { passive: true });
 
-    // 60fps/120fps smooth scrub interpolation loop
+    // 60fps/120fps smooth scrub loop without feedback oscillations
     let rafId: number;
     const loop = () => {
       updateScrollP();
       const diff = targetP.current - currentP.current;
-      if (Math.abs(diff) > 0.0002) {
-        currentP.current += diff * 0.22;
-        render(currentP.current, nodeRefs.current.length);
+      if (Math.abs(diff) > 0.0001) {
+        currentP.current += diff * 0.18;
+        render(currentP.current, anchorRefs.current.length);
       }
       rafId = requestAnimationFrame(loop);
     };
@@ -510,30 +495,29 @@ export default function Module3DiscoveryPage() {
     };
   }, [drawPaths, render, updateScrollP]);
 
-  // Lessons inside the selected track modal
   const modalLessons = selectedTrackForChapters
     ? allLessons.filter((l) => l.paths.includes(selectedTrackForChapters.id))
     : [];
 
   return (
-    <div className="relative min-h-screen py-4 max-w-4xl mx-auto space-y-10 select-none">
+    <div className="relative min-h-screen py-4 max-w-4xl mx-auto space-y-10 select-none pb-36">
       {/* -------------------------------------------------------------------- */}
       {/* 1. Header Bar: Pick a path                                           */}
       {/* -------------------------------------------------------------------- */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pb-6 border-b border-white/10 text-center sm:text-left">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pb-6 border-b border-[var(--border)] text-center sm:text-left">
         <div className="space-y-2">
           <div className="flex items-center justify-center sm:justify-start gap-2.5">
-            <span className="w-2 h-2 rounded-full bg-purple-400 shadow-[0_0_10px_#A855F7] animate-pulse" />
-            <span className="text-xs font-mono tracking-widest text-purple-300 uppercase font-semibold">
-              Module III · 15-Minute Tech Bites
+            <Chip k="MODULE" v="III" tone="accent" />
+            <span className="text-xs font-mono tracking-widest text-[var(--text-3)] uppercase font-semibold">
+              15-Minute Tech Bites
             </span>
           </div>
 
-          <h1 className="font-display text-3xl sm:text-5xl font-black text-white tracking-tight">
+          <h1 className="font-display text-3xl sm:text-5xl font-extrabold text-[var(--text)] tracking-tight">
             Pick a path.
           </h1>
 
-          <p className="font-ui text-sm sm:text-base text-[var(--text-muted)] max-w-xl leading-relaxed">
+          <p className="font-ui text-sm sm:text-base text-[var(--text-2)] max-w-xl leading-relaxed">
             Scroll to explore the architecture checkpoints. Follow the glowing signal
             from Origin down to each station.
           </p>
@@ -547,21 +531,22 @@ export default function Module3DiscoveryPage() {
             aria-label="Toggle Sound Effects"
             className={`px-3.5 py-1.5 rounded-full border text-xs font-mono font-semibold flex items-center gap-2 transition-all cursor-pointer ${
               soundEnabled
-                ? "bg-purple-950/40 border-purple-500/50 text-purple-300 shadow-[0_0_15px_rgba(168,85,247,0.3)]"
-                : "bg-white/5 border-white/10 text-white/50 hover:text-white"
+                ? "bg-[color-mix(in_srgb,var(--accent)_16%,transparent)] border-[var(--accent-bright)] text-[var(--accent-bright)] shadow-[0_0_12px_rgba(156,143,255,0.25)]"
+                : "bg-[var(--glass-subtle)] border-[var(--border)] text-[var(--text-3)] hover:text-[var(--text)]"
             }`}
           >
             <span>{soundEnabled ? "🔊" : "🔇"}</span>
             <span>Sound {soundEnabled ? "ON" : "MUTED"}</span>
           </button>
 
-          <Link
+          <Button
             href="/m3/retest"
-            className="px-3.5 py-1.5 rounded-full border border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/20 text-xs font-mono font-bold text-purple-300 transition-all flex items-center gap-1.5"
+            variant="secondary"
+            size="sm"
+            className="text-xs font-mono font-bold"
           >
-            <span>Retest Queue</span>
-            <span>&rarr;</span>
-          </Link>
+            Retest Queue &rarr;
+          </Button>
         </div>
       </div>
 
@@ -587,7 +572,8 @@ export default function Module3DiscoveryPage() {
           <defs>
             <linearGradient id="glow-grad" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="transparent" />
-              <stop offset="50%" stopColor="#c084fc" />
+              <stop offset="45%" stopColor="#5E4EF0" />
+              <stop offset="85%" stopColor="#9C8FFF" />
               <stop offset="100%" stopColor="#ffffff" />
             </linearGradient>
 
@@ -606,82 +592,97 @@ export default function Module3DiscoveryPage() {
         </svg>
 
         {/* ------------------------------------------------------------------ */}
-        {/* Nodes Column: Origin [0, 0] at top -> 5 Tech Checkpoints below     */}
+        {/* Static Anchors Column with Module II Obsidian Glass Cards Inside   */}
         {/* ------------------------------------------------------------------ */}
         <div
           className="flex flex-col items-center gap-36 sm:gap-40 relative z-20"
           style={{ transformStyle: "preserve-3d" }}
         >
-          {/* Node 0: Origin Station (Start Point [0, 0]) */}
+          {/* Node 0: Origin Station (Anchor 0) */}
           <div
             ref={(el) => {
-              nodeRefs.current[0] = el;
+              anchorRefs.current[0] = el;
             }}
-            className="relative w-[min(90%,420px)] rounded-2xl p-5 border backdrop-blur-xl transition-all duration-500 select-none"
-            style={{
-              background:
-                "linear-gradient(180deg, rgba(30, 20, 50, 0.85) 0%, rgba(19, 13, 34, 0.98) 100%)",
-              transformStyle: "preserve-3d",
-              transform:
-                activeCardIndex === 0
-                  ? "rotateX(0deg) rotateY(0deg) translateZ(40px) scale(1.03)"
-                  : "rotateX(15deg) rotateY(0deg) translateZ(-40px) scale(0.95)",
-              borderColor:
-                activeCardIndex === 0 ? "rgba(192, 132, 252, 0.75)" : "rgba(255, 255, 255, 0.08)",
-              boxShadow:
-                activeCardIndex === 0
-                  ? "0 30px 60px -15px rgba(139, 92, 246, 0.35), 0 0 25px rgba(139, 92, 246, 0.18) inset"
-                  : "0 10px 30px rgba(0, 0, 0, 0.6)",
-            }}
+            className="relative w-[min(90%,440px)] min-h-[130px] flex items-center justify-center"
           >
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-400/30 flex items-center justify-center text-purple-300">
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <circle cx="12" cy="12" r="3" strokeWidth="2" />
-                    <path strokeLinecap="round" strokeWidth="2" d="M12 2v4m0 12v4M2 12h4m12 0h4" />
-                  </svg>
-                </div>
-                <div>
-                  <div className="text-[10px] font-mono uppercase tracking-widest text-purple-400 font-bold">
-                    ORIGIN · TRAIL START
-                  </div>
-                  <h3 className="font-display text-lg font-bold text-white tracking-tight">
-                    Architecture Signal [0, 0]
-                  </h3>
-                </div>
-              </div>
-              <span className="px-2.5 py-1 rounded-full bg-purple-500/15 border border-purple-400/30 text-[10px] font-mono font-bold text-purple-300">
-                START
-              </span>
-            </div>
-            <p className="text-xs text-[var(--text-muted)] mt-2 leading-relaxed">
-              Scroll down to track the pulse across architecture checkpoints.
-            </p>
-
-            {/* Bottom node connector point */}
+            {/* Inner Popped Card (Module II Glass Design) */}
             <div
-              className="node-point bottom"
+              className="w-full rounded-2xl p-5 border backdrop-blur-xl transition-all duration-400 select-none relative"
               style={{
-                position: "absolute",
-                left: "50%",
-                bottom: "-6px",
-                transform: "translateX(-50%) translateZ(10px)",
-                width: "12px",
-                height: "12px",
-                borderRadius: "50%",
-                backgroundColor: activeCardIndex === 0 ? "#c084fc" : "#0a0612",
-                border:
+                background:
                   activeCardIndex === 0
-                    ? "2px solid #ffffff"
-                    : "2px solid rgba(255, 255, 255, 0.15)",
-                boxShadow: activeCardIndex === 0 ? "0 0 15px #c084fc" : "none",
-                transition: "all 0.3s ease",
+                    ? "linear-gradient(180deg, rgba(26, 29, 43, 0.94) 0%, rgba(16, 18, 27, 0.98) 100%)"
+                    : "linear-gradient(180deg, rgba(20, 22, 32, 0.75) 0%, rgba(13, 15, 23, 0.85) 100%)",
+                transformStyle: "preserve-3d",
+                transform:
+                  activeCardIndex === 0
+                    ? "rotateX(0deg) rotateY(0deg) translateZ(36px) scale(1.03)"
+                    : "rotateX(12deg) rotateY(0deg) translateZ(-30px) scale(0.96)",
+                borderColor:
+                  activeCardIndex === 0 ? "var(--accent-bright)" : "var(--border)",
+                boxShadow:
+                  activeCardIndex === 0
+                    ? "0 24px 60px -12px rgba(94, 78, 240, 0.35), 0 0 20px rgba(156, 143, 255, 0.12) inset, inset 0 1px 0 rgba(255, 255, 255, 0.25)"
+                    : "0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 var(--rim)",
               }}
-            />
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3.5">
+                  <div
+                    className={`w-11 h-11 rounded-xl flex items-center justify-center border transition-all duration-300 ${
+                      activeCardIndex === 0
+                        ? "bg-[color-mix(in_srgb,var(--accent)_20%,transparent)] border-[var(--accent-bright)] text-[var(--accent-bright)] shadow-[0_0_16px_rgba(156,143,255,0.4)]"
+                        : "bg-[var(--glass-subtle)] border-[var(--border)] text-[var(--text-3)]"
+                    }`}
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <circle cx="12" cy="12" r="3" strokeWidth="2" />
+                      <path strokeLinecap="round" strokeWidth="2" d="M12 2v4m0 12v4M2 12h4m12 0h4" />
+                    </svg>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Chip k="ORIGIN" v="TRAIL START" tone={activeCardIndex === 0 ? "accent" : "muted"} />
+                    </div>
+                    <h3 className="font-display text-lg font-bold text-[var(--text)] tracking-tight mt-1">
+                      Architecture Signal [0, 0]
+                    </h3>
+                  </div>
+                </div>
+
+                <span className="px-2.5 py-1 rounded-full bg-[color-mix(in_srgb,var(--accent)_16%,transparent)] border border-[var(--accent-bright)] text-[10px] font-mono font-bold text-[var(--accent-bright)]">
+                  START
+                </span>
+              </div>
+
+              <p className="font-ui text-xs text-[var(--text-2)] mt-2.5 leading-relaxed">
+                Scroll down to track the pulse across architecture checkpoints.
+              </p>
+
+              {/* Bottom node connector point */}
+              <div
+                className="node-point bottom"
+                style={{
+                  position: "absolute",
+                  left: "50%",
+                  bottom: "-6px",
+                  transform: "translateX(-50%) translateZ(10px)",
+                  width: "12px",
+                  height: "12px",
+                  borderRadius: "50%",
+                  backgroundColor: activeCardIndex === 0 ? "var(--accent-bright)" : "var(--surface-solid)",
+                  border:
+                    activeCardIndex === 0
+                      ? "2px solid #ffffff"
+                      : "2px solid var(--border)",
+                  boxShadow: activeCardIndex === 0 ? "0 0 14px var(--accent-bright)" : "none",
+                  transition: "all 0.3s ease",
+                }}
+              />
+            </div>
           </div>
 
-          {/* Nodes 1..5: Checkpoint Cards (Minimal initial layout per user prompt) */}
+          {/* Nodes 1..5: Checkpoint Cards (Anchors 1..5) */}
           {TRACKS.map((track, trackIdx) => {
             const nodeIndex = trackIdx + 1; // 1 to 5
             const isActive = activeCardIndex === nodeIndex;
@@ -689,119 +690,117 @@ export default function Module3DiscoveryPage() {
 
             return (
               <div
-                key={`checkpoint-${track.id}`}
+                key={`anchor-${track.id}`}
                 ref={(el) => {
-                  nodeRefs.current[nodeIndex] = el;
+                  anchorRefs.current[nodeIndex] = el;
                 }}
-                className="relative w-[min(90%,420px)] rounded-2xl p-6 border backdrop-blur-xl transition-all duration-500 select-none group"
-                style={{
-                  background:
-                    "linear-gradient(180deg, rgba(30, 20, 50, 0.85) 0%, rgba(19, 13, 34, 0.98) 100%)",
-                  transformStyle: "preserve-3d",
-                  transform: isActive
-                    ? "rotateX(0deg) rotateY(0deg) translateZ(40px) scale(1.03)"
-                    : `rotateX(15deg) rotateY(${dormantRotateY}deg) translateZ(-40px) scale(0.95)`,
-                  borderColor: isActive
-                    ? "rgba(192, 132, 252, 0.75)"
-                    : "rgba(255, 255, 255, 0.08)",
-                  boxShadow: isActive
-                    ? "0 30px 60px -15px rgba(139, 92, 246, 0.35), 0 0 25px rgba(139, 92, 246, 0.18) inset"
-                    : "0 10px 30px rgba(0, 0, 0, 0.6)",
-                }}
+                className="relative w-[min(90%,440px)] min-h-[160px] flex items-center justify-center"
               >
-                {/* Top node connector point */}
+                {/* Inner Popped Card (Module II Glass Design) */}
                 <div
-                  className="node-point top"
+                  className="w-full rounded-2xl p-6 border backdrop-blur-xl transition-all duration-400 select-none relative group"
                   style={{
-                    position: "absolute",
-                    left: "50%",
-                    top: "-6px",
-                    transform: "translateX(-50%) translateZ(10px)",
-                    width: "12px",
-                    height: "12px",
-                    borderRadius: "50%",
-                    backgroundColor: isActive ? "#c084fc" : "#0a0612",
-                    border: isActive
-                      ? "2px solid #ffffff"
-                      : "2px solid rgba(255, 255, 255, 0.15)",
-                    boxShadow: isActive ? "0 0 15px #c084fc" : "none",
-                    transition: "all 0.3s ease",
+                    background: isActive
+                      ? "linear-gradient(180deg, rgba(26, 29, 43, 0.94) 0%, rgba(16, 18, 27, 0.98) 100%)"
+                      : "linear-gradient(180deg, rgba(20, 22, 32, 0.75) 0%, rgba(13, 15, 23, 0.85) 100%)",
+                    transformStyle: "preserve-3d",
+                    transform: isActive
+                      ? "rotateX(0deg) rotateY(0deg) translateZ(36px) scale(1.03)"
+                      : `rotateX(12deg) rotateY(${dormantRotateY}deg) translateZ(-30px) scale(0.96)`,
+                    borderColor: isActive
+                      ? "var(--accent-bright)"
+                      : "var(--border)",
+                    boxShadow: isActive
+                      ? "0 24px 60px -12px rgba(94, 78, 240, 0.35), 0 0 20px rgba(156, 143, 255, 0.12) inset, inset 0 1px 0 rgba(255, 255, 255, 0.25)"
+                      : "0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 var(--rim)",
                   }}
-                />
+                >
+                  {/* Top node connector point */}
+                  <div
+                    className="node-point top"
+                    style={{
+                      position: "absolute",
+                      left: "50%",
+                      top: "-6px",
+                      transform: "translateX(-50%) translateZ(10px)",
+                      width: "12px",
+                      height: "12px",
+                      borderRadius: "50%",
+                      backgroundColor: isActive ? "var(--accent-bright)" : "var(--surface-solid)",
+                      border: isActive
+                        ? "2px solid #ffffff"
+                        : "2px solid var(--border)",
+                      boxShadow: isActive ? "0 0 14px var(--accent-bright)" : "none",
+                      transition: "all 0.3s ease",
+                    }}
+                  />
 
-                {/* ------------------------------------------------------------ */}
-                {/* User Required Card Layout:                                   */}
-                {/* ICONS | Checkpoint                                           */}
-                {/*        TECH name                                             */}
-                {/* [ learn ]                                                    */}
-                {/* short description                                            */}
-                {/* ------------------------------------------------------------ */}
-                <div className="flex items-center justify-between gap-3 mb-2.5">
-                  <div className="flex items-center gap-3.5">
-                    {/* Icon Box */}
-                    <div
-                      className={`w-11 h-11 rounded-xl flex items-center justify-center border transition-all duration-300 ${
-                        isActive
-                          ? "bg-purple-950/60 border-purple-400/80 text-purple-300 shadow-[0_0_16px_rgba(168,85,247,0.4)]"
-                          : "bg-white/5 border-white/10 text-purple-400/80 group-hover:border-purple-400/40"
-                      }`}
-                    >
-                      {track.iconSvg}
-                    </div>
-
-                    {/* Checkpoint & Tech Name */}
-                    <div>
-                      <div className="text-[10px] font-mono uppercase tracking-widest text-purple-400 font-bold">
-                        CHECKPOINT 0{trackIdx + 1}
+                  {/* Header Row */}
+                  <div className="flex items-center justify-between gap-3 mb-2.5">
+                    <div className="flex items-center gap-3.5">
+                      <div
+                        className={`w-11 h-11 rounded-xl flex items-center justify-center border transition-all duration-300 ${
+                          isActive
+                            ? "bg-[color-mix(in_srgb,var(--accent)_20%,transparent)] border-[var(--accent-bright)] text-[var(--accent-bright)] shadow-[0_0_16px_rgba(156,143,255,0.4)]"
+                            : "bg-[var(--glass-subtle)] border-[var(--border)] text-[var(--text-3)] group-hover:border-[var(--border-strong)]"
+                        }`}
+                      >
+                        {track.iconSvg}
                       </div>
-                      <h3 className="font-display text-lg sm:text-xl font-bold text-white tracking-tight">
-                        {track.title}
-                      </h3>
+
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <Chip k="CHECKPOINT" v={`0${trackIdx + 1}`} tone={isActive ? "accent" : "muted"} />
+                        </div>
+                        <h3 className="font-display text-lg sm:text-xl font-bold text-[var(--text)] tracking-tight mt-1">
+                          {track.title}
+                        </h3>
+                      </div>
                     </div>
+
+                    {/* Module II Button */}
+                    <Button
+                      variant={isActive ? "primary" : "secondary"}
+                      size="sm"
+                      onClick={() => {
+                        setSelectedTrackForChapters(track);
+                        if (soundEnabledRef.current) playMetallicChime(1.3);
+                      }}
+                      className="text-xs shrink-0"
+                    >
+                      Learn &rarr;
+                    </Button>
                   </div>
 
-                  {/* [ Learn → ] Button */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedTrackForChapters(track);
-                      if (soundEnabledRef.current) playMetallicChime(1.3);
+                  {/* Short Description */}
+                  <p className="font-ui text-xs sm:text-sm text-[var(--text-2)] leading-relaxed mt-2.5">
+                    {track.shortInfo}
+                  </p>
+
+                  {/* Bottom node connector point */}
+                  <div
+                    className="node-point bottom"
+                    style={{
+                      position: "absolute",
+                      left: "50%",
+                      bottom: "-6px",
+                      transform: "translateX(-50%) translateZ(10px)",
+                      width: "12px",
+                      height: "12px",
+                      borderRadius: "50%",
+                      backgroundColor: isActive ? "var(--accent-bright)" : "var(--surface-solid)",
+                      border: isActive
+                        ? "2px solid #ffffff"
+                        : "2px solid var(--border)",
+                      boxShadow: isActive ? "0 0 14px var(--accent-bright)" : "none",
+                      transition: "all 0.3s ease",
                     }}
-                    className="px-3.5 py-1.5 rounded-full bg-gradient-to-b from-purple-500/25 to-purple-900/30 border border-purple-400/40 text-xs font-mono font-bold text-purple-200 hover:text-white hover:border-purple-300 hover:shadow-[0_0_16px_rgba(192,132,252,0.4)] active:scale-95 transition-all cursor-pointer"
-                  >
-                    Learn &rarr;
-                  </button>
+                  />
                 </div>
-
-                {/* Short Description */}
-                <p className="text-xs sm:text-sm text-[var(--text-muted)] leading-relaxed mt-2">
-                  {track.shortInfo}
-                </p>
-
-                {/* Bottom node connector point */}
-                <div
-                  className="node-point bottom"
-                  style={{
-                    position: "absolute",
-                    left: "50%",
-                    bottom: "-6px",
-                    transform: "translateX(-50%) translateZ(10px)",
-                    width: "12px",
-                    height: "12px",
-                    borderRadius: "50%",
-                    backgroundColor: isActive ? "#c084fc" : "#0a0612",
-                    border: isActive
-                      ? "2px solid #ffffff"
-                      : "2px solid rgba(255, 255, 255, 0.15)",
-                    boxShadow: isActive ? "0 0 15px #c084fc" : "none",
-                    transition: "all 0.3s ease",
-                  }}
-                />
               </div>
             );
           })}
         </div>
-
       </div>
 
       {/* -------------------------------------------------------------------- */}
@@ -811,15 +810,15 @@ export default function Module3DiscoveryPage() {
         <button
           type="button"
           onClick={() => setGeminiModalOpen(true)}
-          className="px-5 py-2.5 rounded-full bg-[#16181d]/90 backdrop-blur-xl border border-white/10 hover:border-purple-400 text-xs font-mono font-semibold text-white flex items-center gap-2.5 shadow-[0_12px_32px_rgba(0,0,0,0.6)] hover:scale-105 transition-all cursor-pointer group"
+          className="px-5 py-2.5 rounded-full bg-[var(--surface-solid)]/90 backdrop-blur-xl border border-[var(--border)] hover:border-[var(--accent-bright)] text-xs font-mono font-semibold text-[var(--text)] flex items-center gap-2.5 shadow-[0_12px_32px_rgba(0,0,0,0.6)] hover:scale-105 transition-all cursor-pointer group"
         >
-          <span className="w-2 h-2 rounded-full bg-purple-400 shadow-[0_0_8px_#C084FC] group-hover:scale-125 transition-transform" />
+          <span className="w-2 h-2 rounded-full bg-[var(--accent-bright)] shadow-[0_0_8px_var(--accent-bright)] group-hover:scale-125 transition-transform" />
           <span>Ask Gemini</span>
         </button>
       </div>
 
       {/* -------------------------------------------------------------------- */}
-      {/* 4. Focused Chapter Drawer/Modal for the Selected Track                */}
+      {/* 4. Focused Chapter Drawer/Modal (Module II Glass Card Style)          */}
       {/* -------------------------------------------------------------------- */}
       {selectedTrackForChapters && (
         <div
@@ -829,20 +828,20 @@ export default function Module3DiscoveryPage() {
           onClick={() => setSelectedTrackForChapters(null)}
         >
           <div
-            className="w-full max-w-lg rounded-2xl border border-purple-500/30 bg-[#120d22]/95 p-6 space-y-5 shadow-2xl relative"
+            className="w-full max-w-lg rounded-2xl border border-[var(--border-strong)] bg-[var(--surface-solid)] p-6 space-y-5 shadow-2xl relative"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="flex items-start justify-between gap-3 border-b border-white/10 pb-4">
+            <div className="flex items-start justify-between gap-3 border-b border-[var(--border)] pb-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-purple-500/15 border border-purple-400/40 flex items-center justify-center text-purple-300">
+                <div className="w-10 h-10 rounded-xl bg-[color-mix(in_srgb,var(--accent)_16%,transparent)] border border-[var(--accent-bright)] flex items-center justify-center text-[var(--accent-bright)]">
                   {selectedTrackForChapters.iconSvg}
                 </div>
                 <div>
-                  <div className="text-[10px] font-mono uppercase tracking-widest text-purple-400 font-bold">
+                  <div className="text-[10px] font-mono uppercase tracking-widest text-[var(--accent-bright)] font-bold">
                     15-MINUTE BITES
                   </div>
-                  <h3 className="font-display text-xl font-bold text-white">
+                  <h3 className="font-display text-xl font-bold text-[var(--text)]">
                     {selectedTrackForChapters.title}
                   </h3>
                 </div>
@@ -859,7 +858,7 @@ export default function Module3DiscoveryPage() {
                   className={`px-3 py-1 rounded-full border text-xs font-mono font-semibold transition-all cursor-pointer ${
                     modalEli5
                       ? "bg-[#FFB547]/20 border-[#FFB547] text-[#FFB547]"
-                      : "bg-white/5 border-white/15 text-white/60 hover:text-white"
+                      : "bg-[var(--glass-subtle)] border-[var(--border)] text-[var(--text-2)] hover:text-[var(--text)]"
                   }`}
                 >
                   {modalEli5 ? "👶 ELI5" : "💡 Tech"}
@@ -868,7 +867,7 @@ export default function Module3DiscoveryPage() {
                 <button
                   type="button"
                   onClick={() => setSelectedTrackForChapters(null)}
-                  className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 cursor-pointer"
+                  className="w-8 h-8 rounded-full border border-[var(--border)] flex items-center justify-center text-[var(--text-3)] hover:text-[var(--text)] hover:bg-[var(--glass-subtle)] cursor-pointer"
                 >
                   ✕
                 </button>
@@ -880,15 +879,15 @@ export default function Module3DiscoveryPage() {
               {modalLessons.map((lesson) => (
                 <div
                   key={lesson.id}
-                  className="p-4 rounded-xl border border-white/10 bg-white/[0.03] hover:border-purple-400/40 hover:bg-white/[0.06] transition-all space-y-2.5"
+                  className="p-4 rounded-xl border border-[var(--border)] bg-[var(--glass-subtle)] hover:border-[var(--accent-bright)] hover:bg-[var(--glass)] transition-all space-y-2.5"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <span className="text-base">{getLessonIcon(lesson.id)}</span>
-                        <h4 className="font-ui text-sm font-bold text-white">{lesson.title}</h4>
+                        <h4 className="font-ui text-sm font-bold text-[var(--text)]">{lesson.title}</h4>
                       </div>
-                      <div className="text-[10px] font-mono text-[var(--text-muted)] flex items-center gap-2">
+                      <div className="text-[10px] font-mono text-[var(--text-3)] flex items-center gap-2">
                         <span>15m bite</span>
                         <span>•</span>
                         <span className="text-emerald-400">+{lesson.xpAward} XP</span>
@@ -901,16 +900,18 @@ export default function Module3DiscoveryPage() {
                       </div>
                     </div>
 
-                    <Link
+                    <Button
                       href={`/m3/lesson/${lesson.id}`}
-                      className="shrink-0 px-3 py-1.5 rounded-full bg-purple-500/20 border border-purple-400/40 text-xs font-mono font-bold text-purple-200 hover:text-white hover:bg-purple-500/30 transition-all shadow-[0_0_12px_rgba(168,85,247,0.3)]"
+                      variant="primary"
+                      size="sm"
+                      className="shrink-0 text-xs"
                     >
                       Start &rarr;
-                    </Link>
+                    </Button>
                   </div>
 
                   {/* Outcome or ELI5 Metaphor */}
-                  <div className="text-xs text-[var(--text-muted)] leading-relaxed">
+                  <div className="text-xs text-[var(--text-2)] leading-relaxed">
                     {modalEli5 ? (
                       <div className="p-2.5 rounded-lg bg-[#FFB547]/10 border border-[#FFB547]/30 text-[#FFB547]">
                         <span className="font-bold mr-1">👶 ELI5:</span>
@@ -922,8 +923,8 @@ export default function Module3DiscoveryPage() {
                   </div>
 
                   {/* 5 Stages indicator */}
-                  <div className="flex items-center gap-1.5 pt-1 text-[9px] font-mono text-white/40">
-                    <span className="text-purple-300 font-semibold">5 Stages:</span>
+                  <div className="flex items-center gap-1.5 pt-1 text-[9px] font-mono text-[var(--text-3)]">
+                    <span className="text-[var(--accent-bright)] font-semibold">5 Stages:</span>
                     <span>1. Why</span>
                     <span>&rarr;</span>
                     <span>2. Model</span>
@@ -952,43 +953,43 @@ export default function Module3DiscoveryPage() {
           onClick={() => setGeminiModalOpen(false)}
         >
           <div
-            className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#120d22] p-6 space-y-4 shadow-2xl relative"
+            className="w-full max-w-lg rounded-2xl border border-[var(--border)] bg-[var(--surface-solid)] p-6 space-y-4 shadow-2xl relative"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+            <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
               <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-purple-400 shadow-[0_0_8px_#C084FC]" />
-                <h3 className="font-display text-lg font-bold text-white">
+                <span className="w-2.5 h-2.5 rounded-full bg-[var(--accent-bright)] shadow-[0_0_8px_var(--accent-bright)]" />
+                <h3 className="font-display text-lg font-bold text-[var(--text)]">
                   Ask Gemini · Tech Bites Curriculum
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setGeminiModalOpen(false)}
-                className="text-white/60 hover:text-white font-mono text-sm cursor-pointer"
+                className="text-[var(--text-3)] hover:text-[var(--text)] font-mono text-sm cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
-            <div className="space-y-3 font-ui text-sm text-[var(--text-muted)] leading-relaxed">
+            <div className="space-y-3 font-ui text-sm text-[var(--text-2)] leading-relaxed">
               <p>
                 <strong>Welcome to 15-Minute Tech Bites!</strong> Each bite builds an
                 interview-ready mental model through 5 active stages without lecture fatigue.
               </p>
-              <div className="p-3 rounded-xl bg-purple-950/30 border border-purple-500/20 space-y-2 text-xs font-mono">
-                <div className="text-purple-300 font-bold">Recommended Learning Trajectory:</div>
-                <ul className="space-y-1 list-disc list-inside text-white/90">
+              <div className="p-3 rounded-xl bg-[color-mix(in_srgb,var(--accent)_10%,transparent)] border border-[color-mix(in_srgb,var(--accent)_25%,transparent)] space-y-2 text-xs font-mono">
+                <div className="text-[var(--accent-bright)] font-bold">Recommended Learning Trajectory:</div>
+                <ul className="space-y-1 list-disc list-inside text-[var(--text)]">
                   <li>
-                    <strong>AI Engineers:</strong> RAG Pipeline → LLM Basics → Tokens & BPE → Vector
+                    <strong>AI Engineers:</strong> RAG Pipeline → LLM Basics → Tokens &amp; BPE → Vector
                     Embeddings
                   </li>
                   <li>
-                    <strong>Backend Engineers:</strong> Caching & Cache-Aside → HTTP/REST
+                    <strong>Backend Engineers:</strong> Caching &amp; Cache-Aside → HTTP/REST
                     Idempotency → Docker Containers
                   </li>
                   <li>
-                    <strong>DevOps & Cloud:</strong> Docker Namespaces/Cgroups → CI/CD Canary
+                    <strong>DevOps &amp; Cloud:</strong> Docker Namespaces/Cgroups → CI/CD Canary
                     Deployments
                   </li>
                 </ul>
@@ -996,13 +997,13 @@ export default function Module3DiscoveryPage() {
             </div>
 
             <div className="pt-2 flex justify-end">
-              <button
-                type="button"
+              <Button
+                variant="primary"
+                size="sm"
                 onClick={() => setGeminiModalOpen(false)}
-                className="px-4 py-2 rounded-full bg-[var(--accent-grad)] text-white text-xs font-mono font-bold cursor-pointer"
               >
                 Got it &rarr;
-              </button>
+              </Button>
             </div>
           </div>
         </div>
