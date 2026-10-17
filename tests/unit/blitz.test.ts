@@ -8,6 +8,7 @@ import {
   getAttemptRepository,
   getMistakeRepository,
   getProgressRepository,
+  getSubscriptionRepository,
 } from "@/lib/db/repositories";
 import { getDb } from "@/lib/db/client";
 
@@ -101,6 +102,87 @@ describe("Pattern Blitz - Problem Content & Session Engine", () => {
       expect(cards.length).toBe(5);
       expect(cards[0].problem.id).toBe(targetProblem.id);
       expect(cards[0].isRevision).toBe(true);
+    });
+
+    it("ensures no repeats across consecutive decks after problems are answered correctly", async () => {
+      const subRepo = getSubscriptionRepository(TEST_USER);
+      await subRepo.updateSubscription({
+        provider: "razorpay",
+        planId: "pro_monthly",
+        status: "active",
+        currentPeriodEnd: new Date(Date.now() + 30 * 86400_000),
+        providerRef: "sub_test_repeat",
+      });
+
+      // Deck 1
+      const deck1 = await getBlitzDeck(TEST_USER, 5, undefined, 42);
+      expect(deck1.cards.length).toBe(5);
+      const deck1Ids = deck1.cards.map((c) => c.problem.id);
+
+      // User correctly solves all 5 problems from Deck 1
+      const progressRepo = getProgressRepository(TEST_USER);
+      for (const id of deck1Ids) {
+        await progressRepo.setProgress("m1", id, "completed", 2);
+      }
+
+      // Deck 2
+      const deck2 = await getBlitzDeck(TEST_USER, 5, undefined, 43);
+      expect(deck2.cards.length).toBe(5);
+      const deck2Ids = deck2.cards.map((c) => c.problem.id);
+
+      // Verify ZERO overlap between deck 1 and deck 2
+      for (const id of deck2Ids) {
+        expect(deck1Ids).not.toContain(id);
+      }
+    });
+
+    it("filters candidate problems by difficulty", async () => {
+      const easyDeck = await getBlitzDeck(TEST_USER, 4, "easy", 101);
+      expect(easyDeck.cards.length).toBe(4);
+      for (const card of easyDeck.cards) {
+        expect(card.problem.difficulty).toBe("easy");
+      }
+
+      const mediumDeck = await getBlitzDeck(TEST_USER, 4, "medium", 102);
+      expect(mediumDeck.cards.length).toBe(4);
+      for (const card of mediumDeck.cards) {
+        expect(card.problem.difficulty).toBe("medium");
+      }
+
+      const hardDeck = await getBlitzDeck(TEST_USER, 4, "hard", 103);
+      expect(hardDeck.cards.length).toBe(4);
+      for (const card of hardDeck.cards) {
+        expect(card.problem.difficulty).toBe("hard");
+      }
+    });
+
+    it("interleaves patterns so consecutive problems vary in category", async () => {
+      const deck = await getBlitzDeck(TEST_USER, 6, undefined, 999);
+      expect(deck.cards.length).toBe(6);
+      const categories = deck.cards.map((c) => c.problem.category);
+      const uniqueCats = new Set(categories);
+      expect(uniqueCats.size).toBeGreaterThanOrEqual(3);
+    });
+
+    it("falls back to oldest-correct problems and sets clearedBank when the pool is exhausted", async () => {
+      const progressRepo = getProgressRepository(TEST_USER);
+      const easyProblems = ALL_BLITZ_PROBLEMS.filter((p) => p.difficulty === "easy");
+      const baseTime = Date.now() - 100_000;
+
+      for (let i = 0; i < easyProblems.length; i++) {
+        const prob = easyProblems[i];
+        await progressRepo.setProgress("m1", prob.id, "completed", 2);
+        const doc = await progressRepo.getProgress("m1", prob.id);
+        if (doc) {
+          doc.updatedAt = new Date(baseTime + i * 1000);
+        }
+      }
+
+      const result = await getBlitzDeck(TEST_USER, 5, "easy", 200);
+      expect(result.clearedBank).toBe(true);
+      expect(result.cards.length).toBe(5);
+      expect(result.cards.every((c) => c.isRevision)).toBe(true);
+      expect(result.cards.every((c) => c.problem.difficulty === "easy")).toBe(true);
     });
 
     it("detects free tier daily quota when 5 attempts already made today", async () => {

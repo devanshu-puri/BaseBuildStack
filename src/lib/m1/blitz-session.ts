@@ -46,25 +46,96 @@ export interface BlitzVerdict {
   calibration: string;
 }
 
+export type BlitzDifficulty = "easy" | "medium" | "hard";
+
+export interface BlitzDeckResult {
+  cards: BlitzSessionCard[];
+  dailyQuotaReached: boolean;
+  clearedBank: boolean;
+}
+
 /**
- * Randomize array elements deterministically or with standard shuffle
+ * Creates a deterministic 32-bit PRNG (Mulberry32) or uses Math.random
  */
-function shuffleArray<T>(arr: T[]): T[] {
+function createPrng(seed?: number): () => number {
+  if (seed === undefined) {
+    return () => Math.random();
+  }
+  let a = seed >>> 0;
+  return function () {
+    let t = (a += 0x6d2b79f5);
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * Randomize array elements with Fisher-Yates shuffle (optionally seeded)
+ */
+export function shuffleArray<T>(arr: T[], seed?: number): T[] {
   const result = [...arr];
+  const rand = createPrng(seed);
   for (let i = result.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(rand() * (i + 1));
     [result[i], result[j]] = [result[j], result[i]];
   }
   return result;
 }
 
 /**
- * Loads a Pattern Blitz deck for user, prioritizing SRS due cards.
+ * Interleave problems across distinct patterns/categories to prevent clustering
+ */
+function interleaveByPattern(problems: BlitzProblem[], rand: () => number): BlitzProblem[] {
+  if (problems.length <= 1) return problems;
+
+  const groups = new Map<string, BlitzProblem[]>();
+  for (const prob of problems) {
+    const key = prob.category || prob.pattern;
+    const list = groups.get(key) || [];
+    list.push(prob);
+    groups.set(key, list);
+  }
+
+  // Shuffle the category order so different patterns lead
+  const categoryKeys = Array.from(groups.keys());
+  for (let i = categoryKeys.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [categoryKeys[i], categoryKeys[j]] = [categoryKeys[j], categoryKeys[i]];
+  }
+
+  const interleaved: BlitzProblem[] = [];
+  let remainingCount = problems.length;
+
+  while (remainingCount > 0) {
+    let addedInPass = 0;
+    for (const key of categoryKeys) {
+      const bucket = groups.get(key);
+      if (bucket && bucket.length > 0) {
+        interleaved.push(bucket.shift()!);
+        remainingCount--;
+        addedInPass++;
+      }
+    }
+    if (addedInPass === 0) break;
+  }
+
+  return interleaved;
+}
+
+/**
+ * Loads a Pattern Blitz deck for user, prioritizing SRS due cards,
+ * excluding already-solved problems, interleaving patterns, and falling
+ * back to oldest-correct problems when the bank is cleared.
  */
 export async function getBlitzDeck(
   userId: string,
-  deckSize = 10
-): Promise<{ cards: BlitzSessionCard[]; dailyQuotaReached: boolean }> {
+  deckSize = 10,
+  difficulty?: BlitzDifficulty,
+  seed?: number
+): Promise<BlitzDeckResult> {
+  const rand = createPrng(seed);
+
   // Check daily limit for free tier
   const entitlements = await checkEntitlements(userId);
   if (!entitlements.isPro) {
@@ -76,7 +147,7 @@ export async function getBlitzDeck(
     );
 
     if (todayAttempts.length >= entitlements.features.maxBlitzPerDay) {
-      return { cards: [], dailyQuotaReached: true };
+      return { cards: [], dailyQuotaReached: true, clearedBank: false };
     }
   }
 
@@ -90,29 +161,88 @@ export async function getBlitzDeck(
   for (const srs of dueCards) {
     const prob = getBlitzProblemById(srs.itemId);
     if (prob && !selectedIds.has(prob.id)) {
+      if (difficulty && prob.difficulty !== difficulty) {
+        continue;
+      }
       selectedProblems.push({ problem: prob, isRevision: true });
       selectedIds.add(prob.id);
       if (selectedProblems.length >= deckSize) break;
     }
   }
 
-  // 2. Fill remaining cards from unseen problems
+  // 2. Fetch solved/completed problems to exclude from candidate pool
+  const progressRepo = getProgressRepository(userId);
+  const m1Progress = await progressRepo.getModuleProgress("m1");
+  const completedProgress = m1Progress.filter((p) => p.status === "completed");
+  const solvedProblemIds = new Set(completedProgress.map((p) => p.itemId));
+
+  // 3. Filter unseen candidate pool
+  const unsolvedPool = ALL_BLITZ_PROBLEMS.filter(
+    (p) =>
+      !selectedIds.has(p.id) &&
+      !solvedProblemIds.has(p.id) &&
+      (!difficulty || p.difficulty === difficulty)
+  );
+
+  let clearedBank = false;
+
+  // 4. Fill remaining cards from unsolved pool
   if (selectedProblems.length < deckSize) {
-    for (const prob of ALL_BLITZ_PROBLEMS) {
-      if (!selectedIds.has(prob.id)) {
+    if (unsolvedPool.length > 0) {
+      const shuffled = shuffleArray(unsolvedPool, seed);
+      const interleaved = interleaveByPattern(shuffled, rand);
+
+      for (const prob of interleaved) {
         selectedProblems.push({ problem: prob, isRevision: false });
         selectedIds.add(prob.id);
         if (selectedProblems.length >= deckSize) break;
       }
+
+      // Check if fresh bank for this difficulty has now been exhausted
+      const remainingUnsolved = ALL_BLITZ_PROBLEMS.some(
+        (p) =>
+          !selectedIds.has(p.id) &&
+          !solvedProblemIds.has(p.id) &&
+          (!difficulty || p.difficulty === difficulty)
+      );
+      clearedBank = !remainingUnsolved;
     }
+
+    // 5. Fallback to oldest-correct problems for revision if pool is empty or exhausted
+    if (selectedProblems.length < deckSize) {
+      clearedBank = true;
+
+      const oldestFirst = [...completedProgress].sort((a, b) => {
+        const timeA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+        const timeB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+        return timeA - timeB;
+      });
+
+      for (const prog of oldestFirst) {
+        const prob = getBlitzProblemById(prog.itemId);
+        if (prob && !selectedIds.has(prob.id)) {
+          if (difficulty && prob.difficulty !== difficulty) {
+            continue;
+          }
+          selectedProblems.push({ problem: prob, isRevision: true });
+          selectedIds.add(prob.id);
+          if (selectedProblems.length >= deckSize) break;
+        }
+      }
+    }
+  } else {
+    const remainingUnsolved = ALL_BLITZ_PROBLEMS.some(
+      (p) => !solvedProblemIds.has(p.id) && (!difficulty || p.difficulty === difficulty)
+    );
+    clearedBank = !remainingUnsolved;
   }
 
-  // 3. Prepare display deck with randomized pattern options
-  const cards: BlitzSessionCard[] = selectedProblems.map(({ problem, isRevision }) => {
-    const patternOptions = shuffleArray([
-      problem.pattern,
-      ...problem.patternDistractors,
-    ]);
+  // 6. Prepare display deck with randomized pattern options
+  const cards: BlitzSessionCard[] = selectedProblems.map(({ problem, isRevision }, idx) => {
+    const patternOptions = shuffleArray(
+      [problem.pattern, ...problem.patternDistractors],
+      seed !== undefined ? seed + idx + 100 : undefined
+    );
     return {
       problem,
       isRevision,
@@ -120,7 +250,7 @@ export async function getBlitzDeck(
     };
   });
 
-  return { cards, dailyQuotaReached: false };
+  return { cards, dailyQuotaReached: false, clearedBank };
 }
 
 /**

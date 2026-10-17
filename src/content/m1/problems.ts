@@ -1,5 +1,6 @@
 import { BlitzProblem, BlitzProblemSchema } from "./schema";
 export type { BlitzProblem } from "./schema";
+import { arraysAndHashingProblems } from "./data/p0-arrays-hashing";
 import { twoPointersProblems } from "./data/p1-two-pointers";
 import { slidingWindowProblems } from "./data/p2-sliding-window";
 import { monotonicStackAndCycleProblems } from "./data/p3-monotonic-stack";
@@ -10,6 +11,7 @@ import { treesAndGraphsProblems } from "./data/p7-trees-graphs";
 import { dpAndAdvancedProblems } from "./data/p8-dp-advanced";
 
 const RAW_PROBLEMS: BlitzProblem[] = [
+  ...arraysAndHashingProblems,
   ...twoPointersProblems,
   ...slidingWindowProblems,
   ...monotonicStackAndCycleProblems,
