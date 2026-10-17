@@ -75,6 +75,7 @@ export const QuizEvaluationResultSchema = z.object({
     distractorTakedown: z.string().optional(),
     allDistractors: z.record(z.string(), z.string()),
     takeaway: z.string(),
+    followUp: z.string().optional(),
     repoEvidence: z
       .object({
         path: z.string(),

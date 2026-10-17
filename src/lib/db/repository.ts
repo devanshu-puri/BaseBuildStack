@@ -16,6 +16,27 @@ export function clearMemoryStoresForTest(): void {
   memoryStores.clear();
 }
 
+function matchesFilter(
+  item: Record<string, unknown>,
+  filter: Record<string, unknown>
+): boolean {
+  for (const [k, v] of Object.entries(filter)) {
+    if (
+      v &&
+      typeof v === "object" &&
+      "$in" in v &&
+      Array.isArray((v as { $in: unknown[] }).$in)
+    ) {
+      if (!(v as { $in: unknown[] }).$in.includes(item[k])) {
+        return false;
+      }
+    } else if (item[k] !== v) {
+      return false;
+    }
+  }
+  return true;
+}
+
 export class UserScopedRepository<T extends { userId: string }> {
   readonly collectionName: string;
   readonly userId: string;
@@ -50,12 +71,8 @@ export class UserScopedRepository<T extends { userId: string }> {
       const store = getMemoryStore(this.collectionName);
       let results: Record<string, unknown>[] = [];
       for (const item of store.values()) {
-        if (item.userId === this.userId) {
-          let match = true;
-          for (const [k, v] of Object.entries(scopedFilter)) {
-            if (item[k] !== v) match = false;
-          }
-          if (match) results.push({ ...item });
+        if (item.userId === this.userId && matchesFilter(item, scopedFilter as Record<string, unknown>)) {
+          results.push({ ...item });
         }
       }
 
@@ -99,12 +116,8 @@ export class UserScopedRepository<T extends { userId: string }> {
     } catch {
       const store = getMemoryStore(this.collectionName);
       for (const item of store.values()) {
-        if (item.userId === this.userId) {
-          let match = true;
-          for (const [k, v] of Object.entries(scopedFilter)) {
-            if (item[k] !== v) match = false;
-          }
-          if (match) return this.schema.parse(item);
+        if (item.userId === this.userId && matchesFilter(item, scopedFilter as Record<string, unknown>)) {
+          return this.schema.parse(item);
         }
       }
       return null;
@@ -156,16 +169,10 @@ export class UserScopedRepository<T extends { userId: string }> {
       let existing: Record<string, unknown> | null = null;
 
       for (const [k, item] of store.entries()) {
-        if (item.userId === this.userId) {
-          let match = true;
-          for (const [fKey, fVal] of Object.entries(scopedFilter)) {
-            if (item[fKey] !== fVal) match = false;
-          }
-          if (match) {
-            foundKey = k;
-            existing = item;
-            break;
-          }
+        if (item.userId === this.userId && matchesFilter(item, scopedFilter as Record<string, unknown>)) {
+          foundKey = k;
+          existing = item;
+          break;
         }
       }
 
@@ -190,15 +197,9 @@ export class UserScopedRepository<T extends { userId: string }> {
     } catch {
       const store = getMemoryStore(this.collectionName);
       for (const [k, item] of store.entries()) {
-        if (item.userId === this.userId) {
-          let match = true;
-          for (const [key, val] of Object.entries(scopedFilter)) {
-            if (item[key] !== val) match = false;
-          }
-          if (match) {
-            store.delete(k);
-            return true;
-          }
+        if (item.userId === this.userId && matchesFilter(item, scopedFilter as Record<string, unknown>)) {
+          store.delete(k);
+          return true;
         }
       }
       return false;
@@ -219,15 +220,9 @@ export class UserScopedRepository<T extends { userId: string }> {
       const store = getMemoryStore(this.collectionName);
       let count = 0;
       for (const [k, item] of Array.from(store.entries())) {
-        if (item.userId === this.userId) {
-          let match = true;
-          for (const [key, val] of Object.entries(scopedFilter)) {
-            if (item[key] !== val) match = false;
-          }
-          if (match) {
-            store.delete(k);
-            count++;
-          }
+        if (item.userId === this.userId && matchesFilter(item, scopedFilter as Record<string, unknown>)) {
+          store.delete(k);
+          count++;
         }
       }
       return count;

@@ -7,6 +7,7 @@ export interface FeedbackCardProps {
   why: string;
   distractors?: string[];
   takeaway: string;
+  followUp?: string;
   evidence?: {
     path: string;
     lines: string;
@@ -19,6 +20,7 @@ export function FeedbackCard({
   why,
   distractors = [],
   takeaway,
+  followUp,
   evidence,
   className = "",
 }: FeedbackCardProps) {
@@ -89,6 +91,18 @@ export function FeedbackCard({
           {takeaway}
         </p>
       </div>
+
+      {/* 5. Likely Follow-Up */}
+      {followUp && (
+        <div className="p-3.5 rounded-[16px] bg-[rgba(139,124,255,0.06)] border border-[rgba(139,124,255,0.2)] space-y-1">
+          <span className="text-[11px] font-mono uppercase font-bold tracking-wider text-[var(--accent-bright)] block">
+            Likely Interview Follow-Up
+          </span>
+          <p className="text-[13px] text-[var(--text-2)] font-ui leading-snug">
+            {followUp}
+          </p>
+        </div>
+      )}
 
       {/* 5. Evidence (if present) */}
       {evidence && (

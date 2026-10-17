@@ -4,9 +4,11 @@ import { QuizRunnerClient } from "./quiz-runner-client";
 export function generateStaticParams() {
   return [
     { mode: "quick" },
+    { mode: "drills" },
     { mode: "fundamentals" },
     { mode: "practical" },
     { mode: "weak_area" },
+    { mode: "projects" },
   ];
 }
 
