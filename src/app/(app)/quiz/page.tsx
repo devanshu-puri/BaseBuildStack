@@ -236,7 +236,6 @@ export default function QuizPickerPage() {
             {skills.map((s) => (
               <Chip
                 key={s.name}
-                k={s.level}
                 v={s.name}
                 tone="accent"
               />
