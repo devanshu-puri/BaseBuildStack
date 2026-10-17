@@ -10,7 +10,6 @@ import {
   getQuestionHistoryRepository,
   getProjectQuestionsRepository,
 } from "@/lib/db/repositories";
-import { clearMemoryStoresForTest } from "@/lib/db/repository";
 
 describe("Module II Phase 1: Canonical Taxonomy & Role Mappings", () => {
   it("enforces canonical skills taxonomy size <= 55 curated skills", () => {
@@ -61,13 +60,21 @@ describe("Module II Phase 1: Canonical Taxonomy & Role Mappings", () => {
 import { getDb } from "@/lib/db/client";
 
 describe("Module II Phase 1: Database Repositories", () => {
+  const foundationTestUsers = [
+    "user_alpha",
+    "user_beta",
+    "user_hist_1",
+    "user_hist_2",
+    "user_pqa",
+    "user_pqb",
+  ];
+
   beforeEach(async () => {
-    clearMemoryStoresForTest();
     try {
       const db = await getDb();
-      await db.collection("user_projects").deleteMany({ userId: { $regex: /^user_/ } });
-      await db.collection("user_question_history").deleteMany({ userId: { $regex: /^user_/ } });
-      await db.collection("project_questions").deleteMany({ userId: { $regex: /^user_/ } });
+      await db.collection("user_projects").deleteMany({ userId: { $in: foundationTestUsers } });
+      await db.collection("user_question_history").deleteMany({ userId: { $in: foundationTestUsers } });
+      await db.collection("project_questions").deleteMany({ userId: { $in: foundationTestUsers } });
     } catch {
       // offline fallback
     }

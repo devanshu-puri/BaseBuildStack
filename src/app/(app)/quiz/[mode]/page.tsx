@@ -1,5 +1,6 @@
 import React, { Suspense } from "react";
 import { QuizRunnerClient } from "./quiz-runner-client";
+import { DebugRunnerClient } from "../practical/debug-runner-client";
 
 export function generateStaticParams() {
   return [
@@ -30,7 +31,7 @@ export default async function QuizRunnerPage({
         </div>
       }
     >
-      <QuizRunnerClient initialMode={mode} />
+      {mode === "practical" ? <DebugRunnerClient /> : <QuizRunnerClient initialMode={mode} />}
     </Suspense>
   );
 }

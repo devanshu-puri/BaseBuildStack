@@ -7,6 +7,7 @@ export interface CodeBlockProps {
   code: string;
   lang?: string;
   highlightLines?: number[];
+  lineStatuses?: Record<number, "correct" | "incorrect" | "revealed" | "hint">;
   selectableLines?: boolean;
   selectedLine?: number;
   onSelectLine?: (lineNum: number) => void;
@@ -17,6 +18,7 @@ export function CodeBlock({
   code,
   lang = "typescript",
   highlightLines = [],
+  lineStatuses = {},
   selectableLines = false,
   selectedLine,
   onSelectLine,
@@ -107,6 +109,28 @@ export function CodeBlock({
               const lineNum = idx + 1;
               const isHighlighted = highlightLines.includes(lineNum);
               const isSelected = selectedLine === lineNum;
+              const status = lineStatuses[lineNum];
+
+              let statusClasses = "";
+              if (status === "correct") {
+                statusClasses =
+                  "bg-[rgba(16,185,129,0.22)] border-l-2 border-[#10B981] text-emerald-200 shadow-[inset_0_0_12px_rgba(16,185,129,0.18)]";
+              } else if (status === "incorrect") {
+                statusClasses =
+                  "bg-[rgba(239,68,68,0.22)] border-l-2 border-[#EF4444] text-rose-200 shadow-[inset_0_0_12px_rgba(239,68,68,0.18)]";
+              } else if (status === "revealed") {
+                statusClasses =
+                  "bg-[rgba(245,158,11,0.22)] border-l-2 border-[#F59E0B] text-amber-200 shadow-[inset_0_0_12px_rgba(245,158,11,0.18)]";
+              } else if (status === "hint") {
+                statusClasses =
+                  "bg-[rgba(139,124,255,0.14)] border-l-2 border-[#8B7CFF]/60 text-[#E0DCFF]";
+              } else if (isSelected) {
+                statusClasses =
+                  "bg-[rgba(94,78,240,0.18)] border-l-2 border-[#5E4EF0] text-white shadow-[inset_0_0_12px_rgba(94,78,240,0.2)]";
+              } else if (isHighlighted) {
+                statusClasses =
+                  "bg-[rgba(255,107,107,0.18)] border-l-2 border-[#FF6B6B] text-[#FF8A8A]";
+              }
 
               return (
                 <div
@@ -114,15 +138,9 @@ export function CodeBlock({
                   onClick={() => selectableLines && onSelectLine?.(lineNum)}
                   className={`flex items-center gap-3.5 px-2.5 py-0.5 rounded-[6px] transition-colors ${
                     selectableLines
-                      ? "cursor-pointer min-h-[44px] sm:min-h-[28px] hover:bg-white/5"
+                      ? "cursor-pointer min-h-[44px] sm:min-h-[28px] hover:bg-white/10 hover:border-l-2 hover:border-white/30"
                       : "min-h-[24px]"
-                  } ${
-                    isSelected
-                      ? "bg-[rgba(94,78,240,0.18)] border-l-2 border-[#5E4EF0] text-white shadow-[inset_0_0_12px_rgba(94,78,240,0.2)]"
-                      : isHighlighted
-                      ? "bg-[rgba(255,107,107,0.18)] border-l-2 border-[#FF6B6B] text-[#FF8A8A]"
-                      : ""
-                  }`}
+                  } ${statusClasses}`}
                 >
                   <span className="w-8 shrink-0 text-right select-none text-[#8A90AA] text-[11px] font-mono opacity-50">
                     {lineNum}
