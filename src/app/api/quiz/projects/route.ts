@@ -58,6 +58,9 @@ export async function GET(req: NextRequest) {
       stats,
     });
   } catch (error) {
+    if ((error as { digest?: string })?.digest === "NEXT_PRERENDER_INTERRUPTED") {
+      throw error;
+    }
     console.error("[API /api/quiz/projects] Error:", error);
     return NextResponse.json(
       { error: "Failed to load project interview panel data" },

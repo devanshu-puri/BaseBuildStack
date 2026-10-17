@@ -30,6 +30,9 @@ export async function GET(req: NextRequest) {
       ...result,
     });
   } catch (error) {
+    if ((error as { digest?: string })?.digest === "NEXT_PRERENDER_INTERRUPTED") {
+      throw error;
+    }
     console.error("[API /api/quiz/practical] Error:", error);
     return NextResponse.json(
       { error: "Failed to load debugging deck" },

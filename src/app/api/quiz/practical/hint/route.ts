@@ -17,6 +17,9 @@ export async function GET(req: NextRequest) {
       ...hint,
     });
   } catch (error: unknown) {
+    if ((error as { digest?: string })?.digest === "NEXT_PRERENDER_INTERRUPTED") {
+      throw error;
+    }
     const message = error instanceof Error ? error.message : "Failed to retrieve hint";
     console.error("[API /api/quiz/practical/hint] Error:", error);
     return NextResponse.json(

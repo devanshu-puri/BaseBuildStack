@@ -98,13 +98,14 @@ export default function QuizPickerPage() {
           }
         }
 
-        // Fetch heatmap/diagnostic stats if available
-        const heatRes = await fetch("/api/quiz/heatmap");
-        if (heatRes.ok) {
-          const heatData = await heatRes.json();
-          if (heatData.accuracyRate !== undefined && heatData.totalAttempts > 0) {
-            setStackKnowledgeScore(Math.round(heatData.accuracyRate));
-            setReadinessScore(Math.min(100, Math.round(heatData.accuracyRate * 0.95 + 5)));
+        // Fetch live diagnostic insights scores
+        const insightsRes = await fetch("/api/quiz/insights");
+        if (insightsRes.ok) {
+          const insightsData = await insightsRes.json();
+          if (insightsData.insights?.scores) {
+            setStackKnowledgeScore(insightsData.insights.scores.stackKnowledge);
+            setReadinessScore(insightsData.insights.scores.interviewReadiness);
+            setProjectUnderstandingScore(insightsData.insights.scores.projectUnderstanding);
           }
         }
       } catch (err) {
@@ -139,7 +140,7 @@ export default function QuizPickerPage() {
           <Button
             variant="secondary"
             size="sm"
-            href="/quiz/heatmap"
+            href="/quiz/insights"
             className="text-xs"
           >
             📊 Diagnostics
@@ -156,57 +157,59 @@ export default function QuizPickerPage() {
       </div>
 
       {/* Compact Readiness Summary Row (Section 9) */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <GlassCard tone="subtle" padding="sm" className="flex items-center justify-between">
-          <div>
-            <div className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-3)] font-semibold">
-              Stack Knowledge
+      <Link href="/quiz/insights" className="block group">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <GlassCard tone="subtle" padding="sm" className="flex items-center justify-between group-hover:border-[var(--border-strong)] transition-all">
+            <div>
+              <div className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-3)] font-semibold">
+                Stack Knowledge
+              </div>
+              <div className="text-xl font-bold font-mono text-[var(--text)] mt-0.5">
+                {stackKnowledgeScore !== null ? `${stackKnowledgeScore}%` : "—"}
+              </div>
             </div>
-            <div className="text-xl font-bold font-mono text-[var(--text)] mt-0.5">
-              {stackKnowledgeScore !== null ? `${stackKnowledgeScore}%` : "—"}
-            </div>
-          </div>
-          <span className="text-[10px] font-mono text-[var(--text-3)] px-2 py-0.5 rounded bg-[var(--glass-subtle)] border border-[var(--border)]">
-            {stackKnowledgeScore !== null ? "Calibrated" : "Need 5 answers"}
-          </span>
-        </GlassCard>
+            <span className="text-[10px] font-mono text-[var(--text-3)] px-2 py-0.5 rounded bg-[var(--glass-subtle)] border border-[var(--border)]">
+              {stackKnowledgeScore !== null ? "Calibrated" : "Need 3+ answers"}
+            </span>
+          </GlassCard>
 
-        <GlassCard tone="subtle" padding="sm" className="flex items-center justify-between">
-          <div>
-            <div className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-3)] font-semibold">
-              Interview Readiness
+          <GlassCard tone="subtle" padding="sm" className="flex items-center justify-between group-hover:border-[var(--border-strong)] transition-all">
+            <div>
+              <div className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-3)] font-semibold">
+                Interview Readiness
+              </div>
+              <div className="text-xl font-bold font-mono text-[var(--text)] mt-0.5">
+                {readinessScore !== null ? `${readinessScore}%` : "—"}
+              </div>
             </div>
-            <div className="text-xl font-bold font-mono text-[var(--text)] mt-0.5">
-              {readinessScore !== null ? `${readinessScore}%` : "—"}
-            </div>
-          </div>
-          <span className="text-[10px] font-mono text-[var(--text-3)] px-2 py-0.5 rounded bg-[var(--glass-subtle)] border border-[var(--border)]">
-            {readinessScore !== null ? "Getting There" : "Take a drill"}
-          </span>
-        </GlassCard>
+            <span className="text-[10px] font-mono text-[var(--text-3)] px-2 py-0.5 rounded bg-[var(--glass-subtle)] border border-[var(--border)]">
+              {readinessScore !== null ? "Triangulated" : "Take a drill"}
+            </span>
+          </GlassCard>
 
-        <GlassCard tone="subtle" padding="sm" className="flex items-center justify-between">
-          <div>
-            <div className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-3)] font-semibold">
-              Project Understanding
+          <GlassCard tone="subtle" padding="sm" className="flex items-center justify-between group-hover:border-[var(--border-strong)] transition-all">
+            <div>
+              <div className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-3)] font-semibold">
+                Project Defense
+              </div>
+              <div className="text-xl font-bold font-mono text-[var(--text)] mt-0.5">
+                {projectUnderstandingScore !== null
+                  ? `${projectUnderstandingScore}%`
+                  : projects.length > 0
+                  ? `${projects.length} Projects`
+                  : "—"}
+              </div>
             </div>
-            <div className="text-xl font-bold font-mono text-[var(--text)] mt-0.5">
+            <span className="text-[10px] font-mono text-[var(--text-3)] px-2 py-0.5 rounded bg-[var(--glass-subtle)] border border-[var(--border)]">
               {projectUnderstandingScore !== null
-                ? `${projectUnderstandingScore}%`
+                ? "Evaluated"
                 : projects.length > 0
-                ? `${projects.length} Projects`
-                : "—"}
-            </div>
-          </div>
-          <span className="text-[10px] font-mono text-[var(--text-3)] px-2 py-0.5 rounded bg-[var(--glass-subtle)] border border-[var(--border)]">
-            {projectUnderstandingScore !== null
-              ? "Evaluated"
-              : projects.length > 0
-              ? "Panel Ready"
-              : "Add in Wizard"}
-          </span>
-        </GlassCard>
-      </div>
+                ? "Panel Ready"
+                : "Add in Wizard"}
+            </span>
+          </GlassCard>
+        </div>
+      </Link>
 
       {/* Active Stack Section (Single source of truth, honest empty state) */}
       <GlassCard tone="subtle" padding="md" className="space-y-3">
