@@ -161,6 +161,7 @@ export default function Module3DiscoveryPage() {
   // State
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [activeCardIndex, setActiveCardIndex] = useState<number>(0);
+  const [visitedUpto, setVisitedUpto] = useState<number>(-1);
   const [selectedTrackForChapters, setSelectedTrackForChapters] = useState<TrackMeta | null>(null);
   const [modalEli5, setModalEli5] = useState(false);
   const [geminiModalOpen, setGeminiModalOpen] = useState(false);
@@ -175,13 +176,14 @@ export default function Module3DiscoveryPage() {
   // STATIC anchor elements (never transformed — eliminates jitter feedback loop)
   const anchorRefs = useRef<(HTMLDivElement | null)[]>([]);
   const pathsRef = useRef<SVGPathElement[]>([]);
-  const pathLengthsRef = useRef<number[]>([]);
+  const pathLengthsRef = useRef<{ totalLen: number; wireLen: number }[]>([]);
   const trailsRef = useRef<SVGCircleElement[]>([]);
 
   // Smooth scroll tracking
   const currentP = useRef(0);
   const targetP = useRef(0);
   const activeIndexRef = useRef(0);
+  const maxVisitedRef = useRef(-1);
   const soundEnabledRef = useRef(soundEnabled);
   soundEnabledRef.current = soundEnabled;
 
@@ -208,7 +210,8 @@ export default function Module3DiscoveryPage() {
     }
   };
 
-  // Construct Bezier splines connecting bottom of anchor[i] to top of anchor[i+1]
+  // Construct Bezier splines connecting bottom of Card i to top of Card i+1,
+  // and continuing down inside Card i+1 to its bottom dot
   const drawPaths = useCallback(() => {
     if (!svgLayerRef.current || !containerRef.current || !pathGroupRef.current) return;
     const pathGroup = pathGroupRef.current;
@@ -218,7 +221,7 @@ export default function Module3DiscoveryPage() {
 
     const containerHeight = containerRef.current.scrollHeight;
     svgLayerRef.current.style.height = `${containerHeight}px`;
-    const containerRect = svgLayerRef.current.getBoundingClientRect();
+    const containerRect = containerRef.current.getBoundingClientRect();
 
     const N = anchorRefs.current.length; // 6 nodes
     for (let i = 0; i < N - 1; i++) {
@@ -229,23 +232,49 @@ export default function Module3DiscoveryPage() {
       const rStart = startAnchor.getBoundingClientRect();
       const rEnd = endAnchor.getBoundingClientRect();
 
-      const start = {
-        x: rStart.left + rStart.width / 2 - containerRect.left,
-        y: rStart.bottom - containerRect.top,
-      };
-      const end = {
-        x: rEnd.left + rEnd.width / 2 - containerRect.left,
-        y: rEnd.top - containerRect.top,
-      };
+      const startDot = startAnchor.querySelector(".node-point.bottom") as HTMLElement | null;
+      const endTopDot = endAnchor.querySelector(".node-point.top") as HTMLElement | null;
+      const endBotDot = endAnchor.querySelector(".node-point.bottom") as HTMLElement | null;
+
+      const pStart = startDot
+        ? {
+            x: startDot.getBoundingClientRect().left + startDot.getBoundingClientRect().width / 2 - containerRect.left,
+            y: startDot.getBoundingClientRect().top + startDot.getBoundingClientRect().height / 2 - containerRect.top,
+          }
+        : {
+            x: rStart.left + rStart.width / 2 - containerRect.left,
+            y: rStart.bottom - containerRect.top,
+          };
+
+      const pEndTop = endTopDot
+        ? {
+            x: endTopDot.getBoundingClientRect().left + endTopDot.getBoundingClientRect().width / 2 - containerRect.left,
+            y: endTopDot.getBoundingClientRect().top + endTopDot.getBoundingClientRect().height / 2 - containerRect.top,
+          }
+        : {
+            x: rEnd.left + rEnd.width / 2 - containerRect.left,
+            y: rEnd.top - containerRect.top,
+          };
+
+      const pEndBot = endBotDot
+        ? {
+            x: endBotDot.getBoundingClientRect().left + endBotDot.getBoundingClientRect().width / 2 - containerRect.left,
+            y: endBotDot.getBoundingClientRect().top + endBotDot.getBoundingClientRect().height / 2 - containerRect.top,
+          }
+        : {
+            x: rEnd.left + rEnd.width / 2 - containerRect.left,
+            y: rEnd.bottom - containerRect.top,
+          };
 
       const maxOffset = Math.min(80, Math.max(35, containerRect.width * 0.18));
       const offset = i % 2 === 0 ? maxOffset : -maxOffset;
-      const cp1X = start.x + offset;
-      const cp1Y = start.y + (end.y - start.y) * 0.4;
-      const cp2X = end.x - offset;
-      const cp2Y = end.y - (end.y - start.y) * 0.4;
+      const cp1X = pStart.x + offset;
+      const cp1Y = pStart.y + (pEndTop.y - pStart.y) * 0.45;
+      const cp2X = pEndTop.x - offset;
+      const cp2Y = pEndTop.y - (pEndTop.y - pStart.y) * 0.45;
 
-      const d = `M ${start.x} ${start.y} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${end.x} ${end.y}`;
+      // Continuous path: leaves Card i bottom dot -> curves across open space -> enters Card i+1 top dot -> travels inside to bottom dot
+      const d = `M ${pStart.x} ${pStart.y} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${pEndTop.x} ${pEndTop.y} L ${pEndBot.x} ${pEndBot.y}`;
 
       const dimPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
       dimPath.setAttribute("d", d);
@@ -265,12 +294,15 @@ export default function Module3DiscoveryPage() {
       pathGroup.appendChild(dimPath);
       pathGroup.appendChild(activePath);
 
-      const len = activePath.getTotalLength();
-      activePath.style.strokeDasharray = `${len}`;
-      activePath.style.strokeDashoffset = `${len}`;
+      const totalLen = activePath.getTotalLength();
+      const cardDist = Math.hypot(pEndBot.x - pEndTop.x, pEndBot.y - pEndTop.y);
+      const wireLen = Math.max(0, totalLen - cardDist);
+
+      activePath.style.strokeDasharray = `${totalLen}`;
+      activePath.style.strokeDashoffset = `${totalLen}`;
 
       pathsRef.current.push(activePath);
-      pathLengthsRef.current.push(len);
+      pathLengthsRef.current.push({ totalLen, wireLen });
     }
   }, []);
 
@@ -281,32 +313,22 @@ export default function Module3DiscoveryPage() {
     const frac = p - idx;
 
     const path = pathsRef.current[idx];
-    const len = pathLengthsRef.current[idx];
-    if (!path || !len) return { x: 0, y: 0 };
+    const lengths = pathLengthsRef.current[idx];
+    if (!path || !lengths) return { x: 0, y: 0 };
 
-    // Stage 1: [0.00 .. 0.18] — Passing across card idx (from top to bottom)
-    if (frac <= 0.18) {
-      if (idx > 0 && pathsRef.current[idx - 1] && pathLengthsRef.current[idx - 1]) {
-        const prevPath = pathsRef.current[idx - 1];
-        const prevLen = pathLengthsRef.current[idx - 1];
-        const topPt = prevPath.getPointAtLength(prevLen);
-        const botPt = path.getPointAtLength(0);
-        const tCard = frac / 0.18;
-        return {
-          x: topPt.x + (botPt.x - topPt.x) * tCard,
-          y: topPt.y + (botPt.y - topPt.y) * tCard,
-        };
-      }
-      return path.getPointAtLength(0);
+    const { totalLen, wireLen } = lengths;
+
+    // Stage 1: [0.00 .. 0.65] — Traveling along open space Bezier wire from Card idx bottom to Card idx+1 top
+    if (frac < 0.65) {
+      const tWire = frac / 0.65;
+      const dist = tWire * wireLen;
+      return path.getPointAtLength(dist);
     }
-    // Stage 3: [0.82 .. 1.00] — Reached top of destination card idx + 1
-    else if (frac >= 0.82) {
-      return path.getPointAtLength(len);
-    }
-    // Stage 2: (0.18 .. 0.82) — Traveling along the Bezier wire in open space
+    // Stage 2: [0.65 .. 1.00] — Traveling INSIDE Card idx + 1 from top dot to bottom dot
     else {
-      const tWire = (frac - 0.18) / 0.64;
-      return path.getPointAtLength(tWire * len);
+      const tCard = (frac - 0.65) / 0.35;
+      const dist = wireLen + tCard * (totalLen - wireLen);
+      return path.getPointAtLength(dist);
     }
   }, []);
 
@@ -336,20 +358,24 @@ export default function Module3DiscoveryPage() {
 
       // 1. Draw glowing line in sync with the ball tracker
       paths.forEach((p, i) => {
+        const lengths = pathLengths[i];
+        if (!lengths) return;
+        const { totalLen, wireLen } = lengths;
+
         if (i < idx) {
-          p.style.strokeDashoffset = "0"; // fully illuminated
+          p.style.strokeDashoffset = "0"; // fully illuminated (includes interior of visited cards!)
         } else if (i > idx) {
-          p.style.strokeDashoffset = `${pathLengths[i]}`; // dormant
+          p.style.strokeDashoffset = `${totalLen}`; // dormant
         } else {
-          // Current wire (idx)
-          if (frac <= 0.18) {
-            p.style.strokeDashoffset = `${pathLengths[i]}`;
-          } else if (frac >= 0.82) {
-            p.style.strokeDashoffset = "0";
+          // Current segment (idx)
+          let currentDist = 0;
+          if (frac < 0.65) {
+            currentDist = (frac / 0.65) * wireLen;
           } else {
-            const tWire = (frac - 0.18) / 0.64;
-            p.style.strokeDashoffset = `${pathLengths[i] * (1 - tWire)}`;
+            const tCard = (frac - 0.65) / 0.35;
+            currentDist = wireLen + tCard * (totalLen - wireLen);
           }
+          p.style.strokeDashoffset = `${Math.max(0, totalLen - currentDist)}`;
         }
       });
 
@@ -358,14 +384,15 @@ export default function Module3DiscoveryPage() {
       if (particleRef.current) {
         particleRef.current.setAttribute("cx", `${pt.x}`);
         particleRef.current.setAttribute("cy", `${pt.y}`);
+        particleRef.current.style.opacity = "1";
       }
 
-      // 3. Move trail particles (only visible during wire transit)
-      const isWireTransit = frac > 0.18 && frac < 0.82;
+      // 3. Move trail particles (active during open space wire transit)
+      const isWireTransit = frac > 0.05 && frac < 0.65;
       const trails = trailsRef.current;
       const trailCount = trails.length;
       trails.forEach((t, i) => {
-        const trailP = Math.max(P - (i + 1) * 0.02, 0);
+        const trailP = Math.max(P - (i + 1) * 0.015, 0);
         const tp = getPos(trailP, N);
         t.setAttribute("cx", `${tp.x}`);
         t.setAttribute("cy", `${tp.y}`);
@@ -373,18 +400,33 @@ export default function Module3DiscoveryPage() {
       });
 
       // 4. Card Activation:
-      // When ball reaches the rectangle of the card, THEN ONLY it pops out!
-      // On the wire between cards (0.18 < frac < 0.82), NEITHER card is popped.
+      // When ball reaches the rectangle of Card idx + 1 (top dot at frac = 0.65), THEN ONLY it pops out!
+      // While traveling on the wire in open space (0.05 < frac < 0.65), neither card is popped.
       let newActive = -1;
-      if (frac >= 0.82) {
-        newActive = idx + 1; // Ball reached the destination card rectangle
-      } else if (frac <= 0.18) {
-        newActive = idx; // Ball is on the current card
+      if (frac >= 0.65) {
+        newActive = idx + 1; // Ball reached the destination card rectangle and is traveling inside
+      } else if (frac <= 0.05 && idx === 0) {
+        newActive = 0; // Ball is at Origin station at the very beginning
       } else {
         newActive = -1; // Ball is traveling on the wire in open space
       }
 
       updateCards(newActive);
+
+      // 5. Track visited stations ("been there, now moving to next step")
+      // Checkpoint turns FILLED on leaving its bottom dot
+      let currentVisited = -1;
+      if (P >= 5.0) currentVisited = 5;
+      else if (P >= 4.0) currentVisited = 4;
+      else if (P >= 3.0) currentVisited = 3;
+      else if (P >= 2.0) currentVisited = 2;
+      else if (P >= 1.0) currentVisited = 1;
+      else if (P > 0.05) currentVisited = 0;
+
+      if (currentVisited > maxVisitedRef.current) {
+        maxVisitedRef.current = currentVisited;
+        setVisitedUpto(currentVisited);
+      }
     },
     [getPos, updateCards]
   );
@@ -566,13 +608,13 @@ export default function Module3DiscoveryPage() {
         <svg
           ref={svgLayerRef}
           id="svg-layer"
-          className="absolute top-0 left-0 w-full pointer-events-none z-10"
-          style={{ transform: "translateZ(-50px)" }}
+          className="absolute top-0 left-0 w-full pointer-events-none z-30"
+          style={{ pointerEvents: "none" }}
         >
           <defs>
             <linearGradient id="glow-grad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="transparent" />
-              <stop offset="45%" stopColor="#5E4EF0" />
+              <stop offset="0%" stopColor="#5E4EF0" />
+              <stop offset="50%" stopColor="#8075FF" />
               <stop offset="85%" stopColor="#9C8FFF" />
               <stop offset="100%" stopColor="#ffffff" />
             </linearGradient>
@@ -588,7 +630,7 @@ export default function Module3DiscoveryPage() {
 
           <g ref={pathGroupRef} id="path-group" />
           <g ref={trailGroupRef} id="trail-group" />
-          <circle ref={particleRef} id="particle" r="6" fill="#fff" filter="url(#glow)" />
+          <circle ref={particleRef} id="particle" r="6" fill="#fff" filter="url(#glow)" style={{ opacity: 0 }} />
         </svg>
 
         {/* ------------------------------------------------------------------ */}
@@ -603,7 +645,7 @@ export default function Module3DiscoveryPage() {
             ref={(el) => {
               anchorRefs.current[0] = el;
             }}
-            className="relative w-[min(90%,440px)] min-h-[130px] flex items-center justify-center"
+            className="relative w-[min(90%,440px)] flex items-center justify-center"
           >
             {/* Inner Popped Card (Module II Glass Design) */}
             <div
@@ -622,16 +664,31 @@ export default function Module3DiscoveryPage() {
                   activeCardIndex === 0 ? "var(--accent-bright)" : "var(--border)",
                 boxShadow:
                   activeCardIndex === 0
-                    ? "0 24px 60px -12px rgba(94, 78, 240, 0.35), 0 0 20px rgba(156, 143, 255, 0.12) inset, inset 0 1px 0 rgba(255, 255, 255, 0.25)"
+                    ? "0 24px 60px -12px rgba(94, 78, 240, 0.4), 0 0 20px rgba(156, 143, 255, 0.15) inset, inset 0 1px 0 rgba(255, 255, 255, 0.35)"
                     : "0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 var(--rim)",
               }}
             >
-              <div className="flex items-center justify-between gap-3">
+              {/* Interior Energy Conduit Track */}
+              <div
+                className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-[2px] pointer-events-none transition-all duration-300"
+                style={{
+                  background:
+                    activeCardIndex === 0
+                      ? "linear-gradient(180deg, var(--accent-bright) 0%, rgba(156, 143, 255, 0.6) 50%, var(--accent-bright) 100%)"
+                      : visitedUpto >= 0
+                      ? "linear-gradient(180deg, var(--accent-bright) 0%, rgba(156, 143, 255, 0.35) 50%, var(--accent-bright) 100%)"
+                      : "linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%)",
+                  boxShadow: activeCardIndex === 0 ? "0 0 10px var(--accent-bright)" : "none",
+                  opacity: activeCardIndex === 0 ? 0.8 : visitedUpto >= 0 ? 0.4 : 0.12,
+                }}
+              />
+
+              <div className="flex items-center justify-between gap-3 relative z-10">
                 <div className="flex items-center gap-3.5">
                   <div
                     className={`w-11 h-11 rounded-xl flex items-center justify-center border transition-all duration-300 ${
                       activeCardIndex === 0
-                        ? "bg-[color-mix(in_srgb,var(--accent)_20%,transparent)] border-[var(--accent-bright)] text-[var(--accent-bright)] shadow-[0_0_16px_rgba(156,143,255,0.4)]"
+                        ? "bg-[color-mix(in_srgb,var(--accent)_22%,transparent)] border-[var(--accent-bright)] text-[var(--accent-bright)] shadow-[0_0_16px_rgba(156,143,255,0.4)]"
                         : "bg-[var(--glass-subtle)] border-[var(--border)] text-[var(--text-3)]"
                     }`}
                   >
@@ -655,7 +712,7 @@ export default function Module3DiscoveryPage() {
                 </span>
               </div>
 
-              <p className="font-ui text-xs text-[var(--text-2)] mt-2.5 leading-relaxed">
+              <p className="font-ui text-xs text-[var(--text-2)] mt-2.5 leading-relaxed relative z-10">
                 Scroll down to track the pulse across architecture checkpoints.
               </p>
 
@@ -665,20 +722,37 @@ export default function Module3DiscoveryPage() {
                 style={{
                   position: "absolute",
                   left: "50%",
-                  bottom: "-6px",
-                  transform: "translateX(-50%) translateZ(10px)",
-                  width: "12px",
-                  height: "12px",
+                  bottom: "-7px",
+                  transform: "translateX(-50%) translateZ(12px)",
+                  width: "14px",
+                  height: "14px",
                   borderRadius: "50%",
-                  backgroundColor: activeCardIndex === 0 ? "var(--accent-bright)" : "var(--surface-solid)",
+                  backgroundColor:
+                    activeCardIndex === 0
+                      ? "#ffffff"
+                      : visitedUpto >= 0
+                      ? "var(--accent-bright)"
+                      : "var(--surface-solid)",
                   border:
                     activeCardIndex === 0
-                      ? "2px solid #ffffff"
+                      ? "2.5px solid var(--accent-bright)"
+                      : visitedUpto >= 0
+                      ? "2.5px solid #ffffff"
                       : "2px solid var(--border)",
-                  boxShadow: activeCardIndex === 0 ? "0 0 14px var(--accent-bright)" : "none",
-                  transition: "all 0.3s ease",
+                  boxShadow:
+                    activeCardIndex === 0
+                      ? "0 0 16px var(--accent-bright), 0 0 28px rgba(156, 143, 255, 0.6)"
+                      : visitedUpto >= 0
+                      ? "0 0 12px var(--accent-bright)"
+                      : "none",
+                  transition: "all 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
+                  zIndex: 20,
                 }}
-              />
+              >
+                {visitedUpto >= 0 && activeCardIndex !== 0 && (
+                  <div className="w-1.5 h-1.5 rounded-full bg-white absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                )}
+              </div>
             </div>
           </div>
 
@@ -686,6 +760,7 @@ export default function Module3DiscoveryPage() {
           {TRACKS.map((track, trackIdx) => {
             const nodeIndex = trackIdx + 1; // 1 to 5
             const isActive = activeCardIndex === nodeIndex;
+            const isVisited = visitedUpto >= nodeIndex;
             const dormantRotateY = trackIdx % 2 === 0 ? -6 : 6;
 
             return (
@@ -694,7 +769,7 @@ export default function Module3DiscoveryPage() {
                 ref={(el) => {
                   anchorRefs.current[nodeIndex] = el;
                 }}
-                className="relative w-[min(90%,440px)] min-h-[160px] flex items-center justify-center"
+                className="relative w-[min(90%,440px)] flex items-center justify-center"
               >
                 {/* Inner Popped Card (Module II Glass Design) */}
                 <div
@@ -711,37 +786,66 @@ export default function Module3DiscoveryPage() {
                       ? "var(--accent-bright)"
                       : "var(--border)",
                     boxShadow: isActive
-                      ? "0 24px 60px -12px rgba(94, 78, 240, 0.35), 0 0 20px rgba(156, 143, 255, 0.12) inset, inset 0 1px 0 rgba(255, 255, 255, 0.25)"
+                      ? "0 24px 60px -12px rgba(94, 78, 240, 0.4), 0 0 20px rgba(156, 143, 255, 0.15) inset, inset 0 1px 0 rgba(255, 255, 255, 0.35)"
                       : "0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 var(--rim)",
                   }}
                 >
+                  {/* Interior Energy Conduit Track */}
+                  <div
+                    className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-[2px] pointer-events-none transition-all duration-300"
+                    style={{
+                      background: isActive
+                        ? "linear-gradient(180deg, var(--accent-bright) 0%, rgba(156, 143, 255, 0.6) 50%, var(--accent-bright) 100%)"
+                        : isVisited
+                        ? "linear-gradient(180deg, var(--accent-bright) 0%, rgba(156, 143, 255, 0.35) 50%, var(--accent-bright) 100%)"
+                        : "linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%)",
+                      boxShadow: isActive ? "0 0 10px var(--accent-bright)" : "none",
+                      opacity: isActive ? 0.8 : isVisited ? 0.4 : 0.12,
+                    }}
+                  />
+
                   {/* Top node connector point */}
                   <div
                     className="node-point top"
                     style={{
                       position: "absolute",
                       left: "50%",
-                      top: "-6px",
-                      transform: "translateX(-50%) translateZ(10px)",
-                      width: "12px",
-                      height: "12px",
+                      top: "-7px",
+                      transform: "translateX(-50%) translateZ(12px)",
+                      width: "14px",
+                      height: "14px",
                       borderRadius: "50%",
-                      backgroundColor: isActive ? "var(--accent-bright)" : "var(--surface-solid)",
+                      backgroundColor: isActive
+                        ? "#ffffff"
+                        : isVisited
+                        ? "var(--accent-bright)"
+                        : "var(--surface-solid)",
                       border: isActive
-                        ? "2px solid #ffffff"
+                        ? "2.5px solid var(--accent-bright)"
+                        : isVisited
+                        ? "2.5px solid #ffffff"
                         : "2px solid var(--border)",
-                      boxShadow: isActive ? "0 0 14px var(--accent-bright)" : "none",
-                      transition: "all 0.3s ease",
+                      boxShadow: isActive
+                        ? "0 0 16px var(--accent-bright), 0 0 28px rgba(156, 143, 255, 0.6)"
+                        : isVisited
+                        ? "0 0 12px var(--accent-bright)"
+                        : "none",
+                      transition: "all 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
+                      zIndex: 20,
                     }}
-                  />
+                  >
+                    {isVisited && !isActive && (
+                      <div className="w-1.5 h-1.5 rounded-full bg-white absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                    )}
+                  </div>
 
                   {/* Header Row */}
-                  <div className="flex items-center justify-between gap-3 mb-2.5">
+                  <div className="flex items-center justify-between gap-3 mb-2.5 relative z-10">
                     <div className="flex items-center gap-3.5">
                       <div
                         className={`w-11 h-11 rounded-xl flex items-center justify-center border transition-all duration-300 ${
                           isActive
-                            ? "bg-[color-mix(in_srgb,var(--accent)_20%,transparent)] border-[var(--accent-bright)] text-[var(--accent-bright)] shadow-[0_0_16px_rgba(156,143,255,0.4)]"
+                            ? "bg-[color-mix(in_srgb,var(--accent)_22%,transparent)] border-[var(--accent-bright)] text-[var(--accent-bright)] shadow-[0_0_16px_rgba(156,143,255,0.4)]"
                             : "bg-[var(--glass-subtle)] border-[var(--border)] text-[var(--text-3)] group-hover:border-[var(--border-strong)]"
                         }`}
                       >
@@ -773,7 +877,7 @@ export default function Module3DiscoveryPage() {
                   </div>
 
                   {/* Short Description */}
-                  <p className="font-ui text-xs sm:text-sm text-[var(--text-2)] leading-relaxed mt-2.5">
+                  <p className="font-ui text-xs sm:text-sm text-[var(--text-2)] leading-relaxed mt-2.5 relative z-10">
                     {track.shortInfo}
                   </p>
 
@@ -783,19 +887,34 @@ export default function Module3DiscoveryPage() {
                     style={{
                       position: "absolute",
                       left: "50%",
-                      bottom: "-6px",
-                      transform: "translateX(-50%) translateZ(10px)",
-                      width: "12px",
-                      height: "12px",
+                      bottom: "-7px",
+                      transform: "translateX(-50%) translateZ(12px)",
+                      width: "14px",
+                      height: "14px",
                       borderRadius: "50%",
-                      backgroundColor: isActive ? "var(--accent-bright)" : "var(--surface-solid)",
+                      backgroundColor: isActive
+                        ? "#ffffff"
+                        : isVisited
+                        ? "var(--accent-bright)"
+                        : "var(--surface-solid)",
                       border: isActive
-                        ? "2px solid #ffffff"
+                        ? "2.5px solid var(--accent-bright)"
+                        : isVisited
+                        ? "2.5px solid #ffffff"
                         : "2px solid var(--border)",
-                      boxShadow: isActive ? "0 0 14px var(--accent-bright)" : "none",
-                      transition: "all 0.3s ease",
+                      boxShadow: isActive
+                        ? "0 0 16px var(--accent-bright), 0 0 28px rgba(156, 143, 255, 0.6)"
+                        : isVisited
+                        ? "0 0 12px var(--accent-bright)"
+                        : "none",
+                      transition: "all 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
+                      zIndex: 20,
                     }}
-                  />
+                  >
+                    {isVisited && !isActive && (
+                      <div className="w-1.5 h-1.5 rounded-full bg-white absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                    )}
+                  </div>
                 </div>
               </div>
             );
