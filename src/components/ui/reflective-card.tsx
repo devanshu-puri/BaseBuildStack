@@ -296,6 +296,9 @@ void main() {
 
   color += (hash(gl_FragCoord.xy) - 0.5) / 255.0;
   color = clamp(color, 0.0, 1.0);
+  if (isnan(color.r) || isnan(color.g) || isnan(color.b) || isinf(color.r) || isinf(color.g) || isinf(color.b)) {
+    color = uTheme > 0.5 ? vec3(0.95) : vec3(0.04);
+  }
   fragColor = vec4(color * coverage, coverage);
 }`;
 
@@ -702,12 +705,6 @@ const ReflectiveCard: React.FC<ReflectiveCardProps> = ({
     const videoElement = videoRef.current;
     const camElement = camRef.current;
     if (!root || !body || !canvas || !videoElement || !camElement) return;
-
-    const isMobileOrCoarse = typeof window !== 'undefined' && (window.innerWidth < 768 || window.matchMedia?.('(pointer: coarse)').matches);
-    if (isMobileOrCoarse) {
-      canvas.style.display = 'none';
-      return;
-    }
 
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const renderer = createRenderer(canvas);

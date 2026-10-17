@@ -44,12 +44,6 @@
   background: transparent !important;
 }
 
-@media (pointer: coarse), (max-width: 767px) {
-  .reflective-card__canvas {
-    display: none !important;
-  }
-}
-
 .reflective-card__content {
   position: relative;
   z-index: 1;
