@@ -9,3 +9,6 @@ export * from "./xp-repo";
 export * from "./streak-repo";
 export * from "./milestone-repo";
 export * from "./subscription-repo";
+export * from "./user-projects-repo";
+export * from "./question-history-repo";
+export * from "./project-questions-repo";

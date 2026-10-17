@@ -32,15 +32,25 @@ export function QuizRunnerClient({ initialMode }: QuizRunnerClientProps) {
   const router = useRouter();
   const mode = initialMode || "quick";
 
+  const MODE_TITLES: Record<string, string> = {
+    quick: "Skill Drills",
+    drills: "Skill Drills",
+    fundamentals: "Core Fundamentals",
+    practical: "Practical & Debugging",
+    weak_area: "Adaptive Drills",
+    projects: "Project Panel",
+  };
+  const modeDisplayTitle = MODE_TITLES[mode] || mode;
+
   const [questions, setQuestions] = useState<ClientQuizQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Answering state
+  // Answering state: confidence is null by default so user must make explicit choice
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
   const [answerChanges, setAnswerChanges] = useState(0);
-  const [confidence, setConfidence] = useState<ConfidenceLevel>("certain");
+  const [confidence, setConfidence] = useState<ConfidenceLevel | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [evaluation, setEvaluation] = useState<QuizEvaluationResult | null>(null);
 
@@ -88,7 +98,7 @@ export function QuizRunnerClient({ initialMode }: QuizRunnerClientProps) {
 
   // Submit answer
   const handleSubmit = async () => {
-    if (!selectedOptionId || submitting || evaluation) return;
+    if (!selectedOptionId || !confidence || submitting || evaluation) return;
 
     setSubmitting(true);
     const now = Date.now();
@@ -139,13 +149,52 @@ export function QuizRunnerClient({ initialMode }: QuizRunnerClientProps) {
       setCurrentIndex((prev) => prev + 1);
       setSelectedOptionId(null);
       setAnswerChanges(0);
-      setConfidence("certain");
+      setConfidence(null);
       setEvaluation(null);
       questionStartTimeRef.current = Date.now();
     } else {
       setIsCompleted(true);
     }
   };
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if typing in an input
+      if (
+        document.activeElement?.tagName === "INPUT" ||
+        document.activeElement?.tagName === "TEXTAREA"
+      ) {
+        return;
+      }
+
+      const currentQ = questions[currentIndex];
+      if (!currentQ) return;
+
+      if (!evaluation) {
+        if (e.key === "1" || e.key.toLowerCase() === "a") {
+          if (currentQ.options[0]) handleSelectOption(currentQ.options[0].id);
+        } else if (e.key === "2" || e.key.toLowerCase() === "b") {
+          if (currentQ.options[1]) handleSelectOption(currentQ.options[1].id);
+        } else if (e.key === "3" || e.key.toLowerCase() === "c") {
+          if (currentQ.options[2]) handleSelectOption(currentQ.options[2].id);
+        } else if (e.key === "4" || e.key.toLowerCase() === "d") {
+          if (currentQ.options[3]) handleSelectOption(currentQ.options[3].id);
+        } else if (e.key === "Enter" && selectedOptionId && confidence && !submitting) {
+          handleSubmit();
+        }
+      } else {
+        if (e.key === "Enter") {
+          handleNext();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [questions, currentIndex, evaluation, selectedOptionId, confidence, submitting]);
+
 
   // 1. Loading State
   if (loading) {
@@ -306,7 +355,7 @@ export function QuizRunnerClient({ initialMode }: QuizRunnerClientProps) {
   const hasCode = Boolean(currentQ.code && currentQ.code.trim().length > 0);
 
   return (
-    <div className="pb-24 sm:pb-12 pt-2 px-2 sm:px-4 max-w-6xl mx-auto space-y-6">
+    <div className="pb-36 pt-2 px-2 sm:px-4 max-w-6xl mx-auto space-y-6">
       {/* Top Header & Progress */}
       <div className="space-y-3">
         <div className="flex items-center justify-between text-xs font-mono text-[var(--muted)]">
@@ -314,7 +363,7 @@ export function QuizRunnerClient({ initialMode }: QuizRunnerClientProps) {
             href="/quiz"
             className="hover:text-[var(--fg)] transition-colors flex items-center gap-1 font-semibold"
           >
-            ← Exit {mode}
+            ← Exit {modeDisplayTitle}
           </Link>
           <div className="flex items-center gap-2">
             <span>
@@ -353,12 +402,12 @@ export function QuizRunnerClient({ initialMode }: QuizRunnerClientProps) {
           {hasCode && currentQ.code && (
             <div className="space-y-2">
               <div className="text-[11px] font-mono uppercase tracking-wider text-[var(--muted)] px-1 font-semibold">
-                Snippet ({currentQ.codeLanguage})
+                Snippet ({currentQ.codeLanguage?.toUpperCase() || "CODE"})
               </div>
               <div className="rounded-2xl overflow-hidden border border-[var(--border)] shadow-sm">
                 <CodeBlock
                   code={currentQ.code}
-                  lang={currentQ.codeLanguage}
+                  lang={currentQ.codeLanguage || "typescript"}
                   className="max-h-[380px] sm:max-h-[460px] overflow-y-auto"
                 />
               </div>
@@ -397,9 +446,16 @@ export function QuizRunnerClient({ initialMode }: QuizRunnerClientProps) {
           {/* Confidence Selector (shown before submitting) */}
           {!evaluation && (
             <GlassCard tone="subtle" className="p-3.5 space-y-2.5">
-              <span className="text-[11px] font-mono uppercase tracking-wider text-[var(--muted)] font-semibold block">
-                Confidence Level
-              </span>
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-mono uppercase tracking-wider text-[var(--muted)] font-semibold block">
+                  Confidence Level
+                </span>
+                {!confidence && selectedOptionId && (
+                  <span className="text-[10px] font-mono text-[var(--accent)] font-semibold">
+                    Select confidence to submit
+                  </span>
+                )}
+              </div>
               <div className="grid grid-cols-3 gap-2">
                 {(
                   [
@@ -448,9 +504,15 @@ export function QuizRunnerClient({ initialMode }: QuizRunnerClientProps) {
                 size="lg"
                 className="w-full"
                 onClick={handleSubmit}
-                disabled={!selectedOptionId || submitting}
+                disabled={!selectedOptionId || !confidence || submitting}
               >
-                {submitting ? "Evaluating Answer..." : "Submit Answer"}
+                {submitting
+                  ? "Evaluating Answer..."
+                  : !selectedOptionId
+                  ? "Select an Option"
+                  : !confidence
+                  ? "Select Confidence Level"
+                  : "Submit Answer"}
               </Button>
             ) : (
               <Button
@@ -470,8 +532,16 @@ export function QuizRunnerClient({ initialMode }: QuizRunnerClientProps) {
       <div className="sm:hidden">
         {!evaluation ? (
           <BottomCTA
-            label={submitting ? "Evaluating..." : "Submit Answer"}
-            disabled={!selectedOptionId || submitting}
+            label={
+              submitting
+                ? "Evaluating..."
+                : !selectedOptionId
+                ? "Select an Option"
+                : !confidence
+                ? "Select Confidence"
+                : "Submit Answer"
+            }
+            disabled={!selectedOptionId || !confidence || submitting}
             loading={submitting}
             onClick={handleSubmit}
           />
@@ -485,3 +555,4 @@ export function QuizRunnerClient({ initialMode }: QuizRunnerClientProps) {
     </div>
   );
 }
+

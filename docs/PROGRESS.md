@@ -42,10 +42,15 @@
 
 ---
 
-## 3. Module II — Personalized Interview Quizzes
-- [x] Onboarding (role + stack chips, resume upload and skill extraction confirmation)
-- [x] Quiz runner with 4 question types and 5-part feedback card
-- [x] Skill heatmap & confidence-vs-accuracy calculation
+## 3. Module II — Personalized Interview Quizzes (Rebuild)
+- [x] Phase 1: Foundation & Fixes (Canonical 50-skill taxonomy, role mappings, UserProjects & QuestionHistory repos, 4-card IA, dock spacing, confidence gate)
+- [x] Phase 2: Resume Pipeline (Structured skills + projects extraction with evidence lines, confirmation wizard, re-upload diffing)
+- [x] Phase 3: Question Bank Engine (Section 6.2 schema, validators, code sandbox verification, top 25 skills seed)
+- [ ] Phase 4: Skill Drills & Core Fundamentals (Basic/Medium/Hard difficulty controls, no-repeat history shuffle, 5-part feedback)
+- [ ] Phase 5: Practical & Debugging (Click-the-buggy-line UI, verified code diffs, distractor explanations, 2 attempts)
+- [ ] Phase 6: Project Interview Panel (Read-and-learn Q&A grounded in candidate resume projects, STAR format, Got it tracking)
+- [ ] Phase 7: Scoring & Insights (Stack Knowledge, Interview Readiness, Project Understanding 3-score dashboard)
+- [ ] Phase 8: Hardening, Accessibility & Full Test Suite
 
 ---
 

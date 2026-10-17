@@ -206,6 +206,35 @@ export class UserScopedRepository<T extends { userId: string }> {
   }
 
   /**
+   * Delete multiple documents scoped strictly to this instance's userId.
+   */
+  async deleteMany(filter: Filter<Document> = {}): Promise<number> {
+    const scopedFilter = { ...filter, userId: this.userId };
+
+    try {
+      const col = await this.getCollection();
+      const result = await col.deleteMany(scopedFilter);
+      return result.deletedCount;
+    } catch {
+      const store = getMemoryStore(this.collectionName);
+      let count = 0;
+      for (const [k, item] of Array.from(store.entries())) {
+        if (item.userId === this.userId) {
+          let match = true;
+          for (const [key, val] of Object.entries(scopedFilter)) {
+            if (item[key] !== val) match = false;
+          }
+          if (match) {
+            store.delete(k);
+            count++;
+          }
+        }
+      }
+      return count;
+    }
+  }
+
+  /**
    * Count documents scoped strictly to this instance's userId.
    */
   async count(filter: Filter<Document> = {}): Promise<number> {

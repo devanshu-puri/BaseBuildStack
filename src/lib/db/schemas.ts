@@ -20,9 +20,13 @@ export const ProfileSchema = z.object({
   skills: z
     .array(
       z.object({
+        skillId: z.string().optional(),
         name: z.string(),
         level: z.enum(["beginner", "intermediate", "advanced"]),
         source: z.enum(["manual", "resume", "repo"]),
+        evidence: z.string().optional(),
+        yearsHint: z.string().optional(),
+        verifiedAt: z.date().optional(),
         confirmed: z.boolean().default(true),
       })
     )
@@ -218,3 +222,74 @@ export const NewsItemSchema = z.object({
   fetchedAt: z.date().default(() => new Date()),
 });
 export type NewsItemDocument = z.infer<typeof NewsItemSchema>;
+
+// 20. User Projects (Module II: Project Interview Panel & Resume)
+export const UserProjectSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  name: z.string().min(1),
+  summary: z.string().default(""),
+  role: z.string().default(""),
+  techStack: z.array(z.string()).default([]),
+  responsibilities: z.array(z.string()).default([]),
+  metrics: z.array(z.string()).default([]),
+  links: z.array(z.string()).default([]),
+  version: z.number().default(1),
+  createdAt: z.date().default(() => new Date()),
+  updatedAt: z.date().default(() => new Date()),
+});
+export type UserProjectDocument = z.infer<typeof UserProjectSchema>;
+
+// 21. User Question History (Module II: No-repeat & shuffle cycle)
+export const UserQuestionHistorySchema = z.object({
+  userId: z.string(),
+  questionId: z.string(),
+  firstSeenAt: z.date().default(() => new Date()),
+  lastSeenAt: z.date().default(() => new Date()),
+  timesSeen: z.number().default(1),
+  lastResult: z.enum(["correct", "incorrect"]),
+  correctCount: z.number().default(0),
+  wrongCount: z.number().default(0),
+});
+export type UserQuestionHistoryDocument = z.infer<typeof UserQuestionHistorySchema>;
+
+// 22. Project Questions (Module II: Project Interview Panel Q&A)
+export const ProjectQuestionSchema = z.object({
+  id: z.string(),
+  projectId: z.string(),
+  userId: z.string(),
+  question: z.string(),
+  modelAnswer: z.string(),
+  keyPoints: z.array(z.string()).default([]),
+  commonMistakes: z.array(z.string()).default([]),
+  followUps: z.array(z.string()).default([]),
+  category: z.string(),
+  difficulty: z.enum(["basic", "medium", "hard"]).default("medium"),
+  status: z.enum(["got_it", "need_review", "unreviewed"]).default("unreviewed"),
+  relatedSkills: z.array(z.string()).default([]),
+  createdAt: z.date().default(() => new Date()),
+  updatedAt: z.date().default(() => new Date()),
+});
+export type ProjectQuestionDocument = z.infer<typeof ProjectQuestionSchema>;
+
+// 23. Debug Challenges (Module II: Practical & Debugging Click-the-line)
+export const DebugChallengeSchema = z.object({
+  id: z.string(),
+  skillId: z.string(),
+  difficulty: z.enum(["basic", "medium", "hard"]).default("medium"),
+  scenario: z.string(),
+  language: z.string().default("typescript"),
+  code: z.string(),
+  buggyLines: z.array(
+    z.object({
+      line: z.number(),
+      fix: z.string(),
+      explanation: z.string(),
+    })
+  ),
+  distractorNotes: z.record(z.string(), z.string()).default({}),
+  interviewTakeaway: z.string().optional(),
+  verified: z.boolean().default(true),
+});
+export type DebugChallengeDocument = z.infer<typeof DebugChallengeSchema>;
+
