@@ -1,6 +1,7 @@
 import React, { Suspense } from "react";
 import { QuizRunnerClient } from "./quiz-runner-client";
 import { DebugRunnerClient } from "../practical/debug-runner-client";
+import { ProjectPanelClient } from "../projects/project-panel-client";
 
 export function generateStaticParams() {
   return [
@@ -31,7 +32,13 @@ export default async function QuizRunnerPage({
         </div>
       }
     >
-      {mode === "practical" ? <DebugRunnerClient /> : <QuizRunnerClient initialMode={mode} />}
+      {mode === "practical" ? (
+        <DebugRunnerClient />
+      ) : mode === "projects" ? (
+        <ProjectPanelClient />
+      ) : (
+        <QuizRunnerClient initialMode={mode} />
+      )}
     </Suspense>
   );
 }

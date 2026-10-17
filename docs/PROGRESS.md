@@ -48,7 +48,7 @@
 - [x] Phase 3: Question Bank Engine (Section 6.2 schema, validators, code sandbox verification, top 25 skills seed)
 - [x] Phase 4: Skill Drills & Core Fundamentals (Basic/Medium/Hard difficulty controls, no-repeat history shuffle, 5-part feedback)
 - [x] Phase 5: Practical & Debugging (Click-the-buggy-line UI, verified code diffs, distractor explanations, 2 attempts)
-- [ ] Phase 6: Project Interview Panel (Read-and-learn Q&A grounded in candidate resume projects, STAR format, Got it tracking)
+- [x] Phase 6: Project Interview Panel (Read-and-learn Q&A grounded in candidate resume projects, STAR format, Got it tracking)
 - [ ] Phase 7: Scoring & Insights (Stack Knowledge, Interview Readiness, Project Understanding 3-score dashboard)
 - [ ] Phase 8: Hardening, Accessibility & Full Test Suite
 

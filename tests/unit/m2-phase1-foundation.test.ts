@@ -63,6 +63,8 @@ describe("Module II Phase 1: Database Repositories", () => {
   const foundationTestUsers = [
     "user_alpha",
     "user_beta",
+    "user_gamma",
+    "user_delta",
     "user_hist_1",
     "user_hist_2",
     "user_pqa",

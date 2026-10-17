@@ -30,7 +30,7 @@ export class ProjectQuestionsRepository extends UserScopedRepository<ProjectQues
 
   async setQuestionsForProject(
     projectId: string,
-    questions: Array<Omit<ProjectQuestionDocument, "userId">>
+    questions: Array<Omit<ProjectQuestionDocument, "userId"> | Omit<ProjectQuestionDocument, "userId" | "createdAt" | "updatedAt">>
   ): Promise<ProjectQuestionDocument[]> {
     await this.deleteMany({ projectId });
     const created: ProjectQuestionDocument[] = [];
