@@ -41,11 +41,11 @@ export const metadata: Metadata = {
   description: "Diagnose, learn in 15 minutes, and drill technical rounds in one loop.",
   icons: {
     icon: [
-      { url: "/icon.png", type: "image/png" },
-      { url: "/favicon.ico" },
+      { url: "/icon.png?v=2", type: "image/png" },
+      { url: "/favicon.ico?v=2" },
     ],
     apple: [
-      { url: "/apple-icon.png", type: "image/png" },
+      { url: "/apple-icon.png?v=2", type: "image/png" },
     ],
   },
 };
