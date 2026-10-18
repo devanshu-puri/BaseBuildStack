@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { Avatar } from "@/components/ui/avatar";
 import { AnimatedLogo } from "@/components/ui/animated-logo";
+import { usePricingModal } from "@/components/payments/pricing-context";
 
 export interface TopBarProps {
   title?: string;
@@ -14,6 +15,7 @@ export interface TopBarProps {
 
 export function TopBar({ title, showBack = false }: TopBarProps) {
   const pathname = usePathname() || "";
+  const { openPricingModal, isPro } = usePricingModal();
 
   const getPageTitle = () => {
     if (title) return title;
@@ -58,10 +60,34 @@ export function TopBar({ title, showBack = false }: TopBarProps) {
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3">
+        {/* Pro Status / Upgrade Pill (Highlighted on mobile & desktop) */}
+        {isPro ? (
+          <button
+            type="button"
+            onClick={() => openPricingModal()}
+            title="Pro Membership Active - Click to view perks"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-emerald-500/40 bg-gradient-to-b from-emerald-500/25 via-emerald-950/40 to-black/40 text-xs font-mono font-bold text-white shadow-[0_0_16px_rgba(16,185,129,0.3)] hover:brightness-110 active:scale-95 transition-all cursor-pointer"
+          >
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-emerald-300 font-extrabold tracking-wide">PRO</span>
+            <span className="text-[10px] text-emerald-200/90 font-medium hidden xs:inline sm:inline">ACTIVE</span>
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => openPricingModal()}
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-[var(--accent-bright)]/45 bg-gradient-to-b from-[var(--accent)]/35 to-[var(--accent)]/15 text-xs font-mono font-bold text-white shadow-[0_0_16px_rgba(94,78,240,0.35)] hover:brightness-110 active:scale-95 transition-all cursor-pointer"
+          >
+            <span className="text-[11px] text-[#C084FC]">⚡</span>
+            <span>PRO</span>
+            <span className="text-[10px] text-emerald-300 font-semibold hidden xs:inline sm:inline">₹9</span>
+          </button>
+        )}
+
         {/* Current Streak Indicator (Prominent across all pages) */}
         <div
           title="Current Streak: 4 days"
-          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-amber-500/30 bg-gradient-to-b from-amber-500/15 via-amber-500/5 to-black/30 bg-[#1c1815] text-xs font-mono font-semibold text-amber-400 shadow-[inset_0_1px_0_rgba(245,158,11,0.25),0_4px_12px_rgba(0,0,0,0.35)] select-none"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-amber-500/30 bg-gradient-to-b from-amber-500/15 via-amber-500/5 to-black/30 bg-[#1c1815] text-xs font-mono font-semibold text-amber-400 shadow-[inset_0_1px_0_rgba(245,158,11,0.25),0_4px_12px_rgba(0,0,0,0.35)] select-none"
         >
           <span className="text-sm animate-pulse">🔥</span>
           <span className="font-bold text-white">4</span>

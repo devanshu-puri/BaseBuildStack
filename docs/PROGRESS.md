@@ -30,6 +30,8 @@
 
 ### Payments & Observability
 - [x] Razorpay order creation and webhook handling with signature verification & idempotency
+- [x] Client-side Razorpay Checkout integration with test mode, signature verification, and 1-click free sandbox simulation
+- [x] Free vs Pro comparison pricing modal and dedicated `/pricing` route with monthly/yearly billing
 - [x] Sentry integration (client + server error tracking & LLM spans)
 - [x] Health check route (`/api/health`), data export (`/api/me/export`), and account deletion (`/api/me`)
 
@@ -50,7 +52,7 @@
 - [x] Phase 5: Practical & Debugging (Click-the-buggy-line UI, verified code diffs, distractor explanations, 2 attempts)
 - [x] Phase 6: Project Interview Panel (Read-and-learn Q&A grounded in candidate resume projects, STAR format, Got it tracking)
 - [x] Phase 7: Scoring & Insights (Stack Knowledge, Interview Readiness, Project Understanding 3-score dashboard)
-- [x] Phase 8: Hardening, Accessibility & Full Test Suite
+- [x] Phase 8: Hardening, Accessibility & Full Test Suite (Basic/Mixed drill code snippet normalization, Razorpay ₹9 & instant test payment UX, dynamic Pro status)
 
 ---
 

@@ -9,62 +9,62 @@ import { Button } from "@/components/ui/button";
 
 export default function SignInPage() {
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [sent, setSent] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleOAuth = async (provider: "github" | "google") => {
     setLoading(true);
+    setError(null);
     try {
-      const res = await fetch("/api/auth/providers");
-      const data = await res.json().catch(() => ({}));
-      if (data && data[provider]) {
-        await signIn(provider, { callbackUrl: "/home" });
-        return;
+      await signIn(provider, { callbackUrl: "/home" });
+    } catch {
+      setError(`Failed to connect to ${provider}. Please try again.`);
+      setLoading(false);
+    }
+  };
+
+  const handleCredentialsSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) {
+      setError("Please enter both email and password.");
+      return;
+    }
+    setLoading(true);
+    setError(null);
+
+    try {
+      const result = await signIn("credentials", {
+        email,
+        password,
+        callbackUrl: "/home",
+        redirect: false,
+      });
+
+      if (result?.error) {
+        setError("Invalid email or password. Please verify your credentials.");
+        setLoading(false);
+      } else if (result?.url) {
+        window.location.href = result.url;
+      } else {
+        window.location.href = "/home";
       }
     } catch {
-      // Fallback
-    }
-
-    // If OAuth credentials are not set on host, seamlessly authenticate demo account
-    const result = await signIn("demo", {
-      email: `${provider}.candidate@basebuildstack.internal`,
-      name: provider === "github" ? "GitHub Candidate" : "Google Candidate",
-      callbackUrl: "/home",
-      redirect: false,
-    });
-    if (result?.url) {
-      window.location.href = result.url;
-    } else {
-      window.location.href = "/home";
+      setError("Network error while signing in. Please try again.");
+      setLoading(false);
     }
   };
 
   const handleDemoSignIn = async () => {
     setLoading(true);
+    setError(null);
     const result = await signIn("demo", {
-      email: email || "candidate@basebuildstack.internal",
+      email: "candidate@basebuildstack.internal",
       name: "Demo Candidate",
       callbackUrl: "/home",
       redirect: false,
     });
-    if (result?.url) {
-      window.location.href = result.url;
-    } else {
-      window.location.href = "/home";
-    }
-  };
-
-  const handleEmailSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email) return;
-    setLoading(true);
-    const result = await signIn("demo", {
-      email,
-      name: email.split("@")[0],
-      callbackUrl: "/home",
-      redirect: false,
-    });
-    setSent(true);
     if (result?.url) {
       window.location.href = result.url;
     } else {
@@ -96,7 +96,8 @@ export default function SignInPage() {
           <button
             type="button"
             onClick={() => handleOAuth("github")}
-            className="w-full py-2.5 px-4 rounded-full border border-[var(--border)] bg-[var(--glass-subtle)] hover:bg-[var(--glass)] hover:border-[var(--border-strong)] text-[13px] font-semibold text-[var(--text)] flex items-center justify-center gap-2.5 transition-all cursor-pointer"
+            disabled={loading}
+            className="w-full py-2.5 px-4 rounded-full border border-[var(--border)] bg-[var(--glass-subtle)] hover:bg-[var(--glass)] hover:border-[var(--border-strong)] text-[13px] font-semibold text-[var(--text)] flex items-center justify-center gap-2.5 transition-all cursor-pointer disabled:opacity-50"
           >
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
               <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
@@ -107,7 +108,8 @@ export default function SignInPage() {
           <button
             type="button"
             onClick={() => handleOAuth("google")}
-            className="w-full py-2.5 px-4 rounded-full border border-[var(--border)] bg-[var(--glass-subtle)] hover:bg-[var(--glass)] hover:border-[var(--border-strong)] text-[13px] font-semibold text-[var(--text)] flex items-center justify-center gap-2.5 transition-all cursor-pointer"
+            disabled={loading}
+            className="w-full py-2.5 px-4 rounded-full border border-[var(--border)] bg-[var(--glass-subtle)] hover:bg-[var(--glass)] hover:border-[var(--border-strong)] text-[13px] font-semibold text-[var(--text)] flex items-center justify-center gap-2.5 transition-all cursor-pointer disabled:opacity-50"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z" />
@@ -121,12 +123,12 @@ export default function SignInPage() {
 
         <div className="flex items-center gap-3">
           <div className="flex-1 h-[1px] bg-[var(--border)]" />
-          <span className="text-[11px] font-mono uppercase text-[var(--text-3)]">or email magic link</span>
+          <span className="text-[11px] font-mono uppercase text-[var(--text-3)]">or email &amp; password</span>
           <div className="flex-1 h-[1px] bg-[var(--border)]" />
         </div>
 
-        {/* Email Magic Link Form */}
-        <form onSubmit={handleEmailSubmit} className="space-y-3.5">
+        {/* Email & Password Form */}
+        <form onSubmit={handleCredentialsSubmit} className="space-y-3.5">
           <div>
             <label className="block text-[11px] font-mono uppercase tracking-wider text-[var(--text-3)] mb-1.5 font-semibold">
               Email Address
@@ -141,6 +143,35 @@ export default function SignInPage() {
             />
           </div>
 
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-[11px] font-mono uppercase tracking-wider text-[var(--text-3)] font-semibold">
+                Password
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="text-[11px] font-mono text-[var(--accent-bright)] hover:underline cursor-pointer"
+              >
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
+            <input
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+              className="w-full px-4 py-2.5 rounded-full border border-[var(--border)] bg-[var(--glass-subtle)] text-[13px] text-[var(--text)] placeholder:text-[var(--text-3)] focus:border-[var(--accent-bright)] outline-none transition-colors"
+            />
+          </div>
+
+          {error && (
+            <div className="p-3 rounded-[14px] bg-[var(--bad-bg)] border border-[#FF6B6B]/40 text-[#FF6B6B] text-[12px] font-medium leading-relaxed">
+              {error}
+            </div>
+          )}
+
           <Button
             type="submit"
             disabled={loading}
@@ -149,15 +180,9 @@ export default function SignInPage() {
             size="md"
             className="w-full"
           >
-            Continue with Email
+            Sign In with Password &rarr;
           </Button>
         </form>
-
-        {sent && (
-          <div className="p-3 rounded-[14px] bg-[var(--good-bg)] text-[var(--good-fg)] text-[12px] text-center font-medium">
-            Session authenticated! Redirecting...
-          </div>
-        )}
 
         {/* Fast Dev / Demo Access */}
         <div className="pt-2 border-t border-[var(--border)] space-y-2.5">
@@ -172,8 +197,8 @@ export default function SignInPage() {
 
           <p className="text-[11px] text-center text-[var(--text-3)]">
             Don&apos;t have an account?{" "}
-            <Link href="/sign-up" className="text-[var(--text)] font-semibold hover:underline">
-              Sign up
+            <Link href="/sign-up" className="text-[var(--accent-bright)] font-semibold hover:underline">
+              Create an account
             </Link>
           </p>
         </div>

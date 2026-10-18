@@ -1,15 +1,19 @@
-import { auth } from "@/lib/auth/auth";
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import { applySecurityHeaders } from "@/lib/security/headers";
 
-export default auth((req) => {
+export function middleware(req: NextRequest) {
   const isDevOrTestBypass =
     process.env.NODE_ENV !== "production" &&
     (req.cookies.has("authjs.session-token") ||
       req.cookies.has("__Secure-authjs.session-token") ||
       req.headers.get("x-e2e-test") === "1");
 
-  const isLoggedIn = !!req.auth || isDevOrTestBypass;
+  const hasSessionToken =
+    req.cookies.has("authjs.session-token") ||
+    req.cookies.has("__Secure-authjs.session-token");
+
+  const isLoggedIn = hasSessionToken || isDevOrTestBypass;
   const { pathname } = req.nextUrl;
 
   // Protected application routes
@@ -24,8 +28,6 @@ export default auth((req) => {
     pathname.startsWith("/m4");
 
   if (isAppRoute && !isLoggedIn) {
-    // In dev mode / demo, allow bypass or redirect
-    // If not logged in, redirect to sign-in with callback
     const signInUrl = new URL("/sign-in", req.nextUrl.origin);
     signInUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(signInUrl);
@@ -34,7 +36,7 @@ export default auth((req) => {
   const response = NextResponse.next();
   applySecurityHeaders(response.headers);
   return response;
-});
+}
 
 export const config = {
   matcher: [

@@ -789,7 +789,20 @@ export function QuizRunnerClient({ initialMode }: QuizRunnerClientProps) {
     return "disabled";
   };
 
-  const hasCode = Boolean(currentQ.code && currentQ.code.trim().length > 0);
+  // Safe extraction of code string and language regardless of whether code is string or { language, source } object
+  const codeString =
+    typeof currentQ.code === "string"
+      ? currentQ.code
+      : typeof currentQ.code === "object" && currentQ.code !== null && "source" in currentQ.code
+      ? (currentQ.code as { source: string }).source
+      : "";
+  const codeLang =
+    currentQ.codeLanguage ||
+    (typeof currentQ.code === "object" && currentQ.code !== null && "language" in currentQ.code
+      ? (currentQ.code as { language: string }).language
+      : "typescript") ||
+    "typescript";
+  const hasCode = Boolean(codeString && codeString.trim().length > 0);
 
   return (
     <div className="pb-36 pt-2 px-2 sm:px-4 max-w-6xl mx-auto space-y-6">
@@ -882,15 +895,15 @@ export function QuizRunnerClient({ initialMode }: QuizRunnerClientProps) {
             </h2>
           </GlassCard>
 
-          {hasCode && currentQ.code && (
+          {hasCode && (
             <div className="space-y-2">
               <div className="text-[11px] font-mono uppercase tracking-wider text-[var(--text-3)] px-1 font-semibold">
-                Code Snippet ({currentQ.codeLanguage?.toUpperCase() || "CODE"})
+                Code Snippet ({codeLang.toUpperCase()})
               </div>
               <div className="rounded-2xl overflow-hidden border border-[var(--border)] shadow-sm">
                 <CodeBlock
-                  code={currentQ.code}
-                  lang={currentQ.codeLanguage || "typescript"}
+                  code={codeString}
+                  lang={codeLang}
                   className="max-h-[380px] sm:max-h-[460px] overflow-y-auto"
                 />
               </div>

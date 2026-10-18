@@ -10,6 +10,7 @@ export const UserSchema = z.object({
   targetRole: z.string().default("AI Engineer"),
   stack: z.array(z.string()).default([]),
   plan: z.enum(["free", "pro"]).default("free"),
+  passwordHash: z.string().optional(),
   createdAt: z.date().default(() => new Date()),
 });
 export type UserDocument = z.infer<typeof UserSchema>;

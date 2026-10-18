@@ -3,6 +3,7 @@ import { Bricolage_Grotesque, Geist, Geist_Mono, Inter } from "next/font/google"
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { AuroraBackground } from "@/components/ui/aurora-background";
+import { PricingProvider } from "@/components/payments/pricing-context";
 
 const bricolageGrotesque = Bricolage_Grotesque({
   subsets: ["latin"],
@@ -81,8 +82,10 @@ export default function RootLayout({
       </head>
       <body suppressHydrationWarning className="min-h-screen antialiased">
         <ThemeProvider>
-          <AuroraBackground />
-          {children}
+          <PricingProvider>
+            <AuroraBackground />
+            {children}
+          </PricingProvider>
         </ThemeProvider>
       </body>
     </html>

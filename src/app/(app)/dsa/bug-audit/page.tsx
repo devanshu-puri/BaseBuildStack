@@ -11,8 +11,10 @@ import { FeedbackCard } from "@/components/ui/feedback-card";
 import { BottomCTA } from "@/components/ui/bottom-cta";
 import { StatBlock } from "@/components/ui/stat-block";
 import { BugAuditSessionCard, BugAuditVerdict } from "@/lib/m1/bug-audit-session";
+import { usePricingModal } from "@/components/payments/pricing-context";
 
 export default function BugAuditPage() {
+  const { openPricingModal } = usePricingModal();
   const [loading, setLoading] = useState(true);
   const [cards, setCards] = useState<BugAuditSessionCard[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -178,8 +180,8 @@ export default function BugAuditPage() {
             </p>
           </div>
           <div className="pt-2 flex flex-col gap-3">
-            <Button href="/settings" variant="primary" size="lg" className="w-full">
-              Upgrade to Pro (₹999/mo)
+            <Button onClick={() => openPricingModal()} variant="primary" size="lg" className="w-full">
+              Upgrade to Pro (₹9/mo)
             </Button>
             <Button href="/home" variant="secondary" size="md" className="w-full">
               Back to Home

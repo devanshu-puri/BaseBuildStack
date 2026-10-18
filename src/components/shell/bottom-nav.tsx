@@ -13,10 +13,12 @@ import {
   Analytics01Icon,
   Bookmark01Icon,
 } from "@hugeicons/core-free-icons";
+import { usePricingModal } from "@/components/payments/pricing-context";
 
 export function BottomNav() {
   const pathname = usePathname() || "";
   const router = useRouter();
+  const { openPricingModal } = usePricingModal();
 
   // Hide FloatingDock on focus modes per UI_SPEC §7 so BottomCTA can take bottom slot
   const isFocusScreen =
@@ -47,6 +49,8 @@ export function BottomNav() {
       active: pathname === "/home" || pathname === "/",
       menu: [
         { label: "Dashboard", onClick: () => router.push("/home") },
+        { label: "⚡ Upgrade to Pro (₹9)", onClick: () => openPricingModal() },
+        { separator: true },
         { label: "Settings", onClick: () => router.push("/settings") },
       ],
     },

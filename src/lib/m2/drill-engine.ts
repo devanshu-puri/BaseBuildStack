@@ -9,6 +9,7 @@ import { ALL_M2_QUESTIONS, getM2QuestionById } from "@/content/m2/question-bank"
 import { getProfileRepository } from "@/lib/db/repositories/profile-repo";
 import { getQuestionHistoryRepository } from "@/lib/db/repositories/question-history-repo";
 import { getMistakeRepository } from "@/lib/db/repositories/mistake-repo";
+import { normalizeSkillAlias, CANONICAL_SKILLS } from "@/lib/m2/skill-taxonomy";
 
 export type DrillDifficultyFilter = M2QuestionDifficulty | "mixed";
 
@@ -28,9 +29,11 @@ export interface PreparedDrillQuestion {
 }
 
 // ClientQuizQuestion compatibility type for unified runner
-export interface ClientQuizQuestion extends ClientM2Question {
+export interface ClientQuizQuestion extends Omit<ClientM2Question, "code"> {
   skill: string;
   stem: string;
+  code?: string;
+  codeLanguage?: string;
 }
 
 export interface DrillDeckResult {
@@ -137,12 +140,21 @@ export async function getUnseenCountPerSkill(
     }
 
     const s = q.skillId.toLowerCase();
-    if (!counts[s]) {
-      counts[s] = { total: 0, unseen: 0 };
+    const canon = CANONICAL_SKILLS.find((cs) => cs.id === s);
+    const keysToPopulate = [s];
+    if (canon) {
+      keysToPopulate.push(canon.name.toLowerCase().trim());
+      keysToPopulate.push(canon.slug.toLowerCase().trim());
     }
-    counts[s].total++;
-    if (!seenIds.has(q.id)) {
-      counts[s].unseen++;
+
+    for (const key of keysToPopulate) {
+      if (!counts[key]) {
+        counts[key] = { total: 0, unseen: 0 };
+      }
+      counts[key].total++;
+      if (!seenIds.has(q.id)) {
+        counts[key].unseen++;
+      }
     }
   }
 
@@ -167,7 +179,7 @@ export async function buildDrillDeck(
   const sessionSeed = options.seed ?? Math.floor(Math.random() * 1_000_000_000);
   const prng = createMulberry32(sessionSeed);
 
-  // 1. Determine active skills
+  // 1. Determine active skills with full taxonomy alias normalization
   let activeSkills = options.skillIds && options.skillIds.length > 0 ? options.skillIds : [];
   if (activeSkills.length === 0) {
     try {
@@ -194,9 +206,16 @@ export async function buildDrillDeck(
     ];
   }
 
-  const normalizedSkills = new Set(
-    activeSkills.map((s) => s.toLowerCase().trim())
-  );
+  const normalizedSkills = new Set<string>();
+  for (const s of activeSkills) {
+    const canon = normalizeSkillAlias(s);
+    if (canon) {
+      normalizedSkills.add(canon.id.toLowerCase().trim());
+      normalizedSkills.add(canon.slug.toLowerCase().trim());
+      normalizedSkills.add(canon.name.toLowerCase().trim());
+    }
+    normalizedSkills.add(s.toLowerCase().trim());
+  }
 
   // 2. Identify weak skills if focusWeak or weak_area mode
   const weakSkillSet = new Set<string>();
@@ -219,8 +238,9 @@ export async function buildDrillDeck(
   let pool = ALL_M2_QUESTIONS.filter((q) => {
     if (q.status !== "published") return false;
 
-    // Skill filter
-    if (!normalizedSkills.has(q.skillId.toLowerCase().trim())) {
+    // Skill filter matching normalized IDs
+    const skillNorm = q.skillId.toLowerCase().trim();
+    if (!normalizedSkills.has(skillNorm)) {
       return false;
     }
 
@@ -244,6 +264,11 @@ export async function buildDrillDeck(
       if (difficulty !== "mixed" && q.difficulty !== difficulty) return false;
       return true;
     });
+  }
+
+  // If still zero matches (e.g. no questions of that difficulty at all), broaden across all difficulties
+  if (pool.length === 0) {
+    pool = ALL_M2_QUESTIONS.filter((q) => q.status === "published");
   }
 
   // 4. Query question history for no-repeat selection
@@ -305,12 +330,23 @@ export async function buildDrillDeck(
     const needed = count - selectedQuestions.length;
     const additional = seenQuestions.slice(0, needed);
     selectedQuestions.push(...additional);
+
+    // If still short of count (e.g. user selected very narrow criteria), backfill from other published questions
+    if (selectedQuestions.length < count) {
+      const selectedIds = new Set(selectedQuestions.map((q) => q.id));
+      const backfillCandidates = ALL_M2_QUESTIONS.filter(
+        (q) => q.status === "published" && !selectedIds.has(q.id)
+      );
+      const shuffledBackfill = seededShuffle(backfillCandidates, prng);
+      const remainingNeeded = count - selectedQuestions.length;
+      selectedQuestions.push(...shuffledBackfill.slice(0, remainingNeeded));
+    }
   }
 
   // 5. Interleave skills so the same skill does not appear 3+ times in a row
   selectedQuestions = interleaveSkills(selectedQuestions);
 
-  // 6. Option order shuffle (keeping option IDs mapped) + client sanitization
+  // 6. Option order shuffle (keeping option IDs mapped) + client sanitization with safe string code mapping
   const clientQuestions: ClientQuizQuestion[] = selectedQuestions.map((q) => {
     const shuffledOptions = prepareQuestionOptions(q, prng);
     const sanitized = sanitizeM2QuestionForClient(q);
@@ -321,6 +357,8 @@ export async function buildDrillDeck(
       // Compatibility aliases for the UI runner
       skill: q.skillId,
       stem: q.prompt,
+      code: q.code ? q.code.source : undefined,
+      codeLanguage: q.code ? q.code.language : "typescript",
     };
   });
 

@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { Chip } from "@/components/ui/chip";
 import SpecularButton from "@/components/ui/specular-button";
 import { AnimatedLogo } from "@/components/ui/animated-logo";
+import { usePricingModal } from "@/components/payments/pricing-context";
 
 const primaryNav = [
   {
@@ -46,6 +47,7 @@ const modules = [
 
 export function SidebarNav() {
   const pathname = usePathname() || "";
+  const { openPricingModal, isPro } = usePricingModal();
 
   return (
     <aside
@@ -117,24 +119,47 @@ export function SidebarNav() {
 
       {/* Footer / Mini Aurora CTA & Settings */}
       <div className="space-y-3 pt-3 border-t border-[var(--border)]">
-        {/* Free-plan card becomes a mini aurora CTA per UI_SPEC §4.2 & §5 */}
-        <div className="aurora-card p-3.5 rounded-[18px] space-y-2 text-white">
-          <div className="flex items-center justify-between">
-            <span className="text-[12px] font-bold text-white tracking-wide">Free Plan</span>
-            <Chip v="PRO" tone="pro" className="text-[10px] py-0 px-2" />
+        {/* Membership CTA & Settings */}
+        {isPro ? (
+          <div className="aurora-card p-3.5 rounded-[18px] space-y-2 text-white border border-emerald-500/40 bg-gradient-to-b from-emerald-950/20 to-black/40">
+            <div className="flex items-center justify-between">
+              <span className="text-[12px] font-bold text-white tracking-wide flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                Pro Active
+              </span>
+              <Chip v="ACTIVE" tone="pro" className="text-[10px] py-0 px-2 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40" />
+            </div>
+            <p className="text-[11px] text-emerald-200/90 leading-snug">
+              All 4 modules unlocked with unlimited AI explanations.
+            </p>
+            <SpecularButton
+              size="sm"
+              radius={9999}
+              className="w-full mt-1.5 font-mono text-[11px] font-bold uppercase tracking-wider shadow-md bg-emerald-600 hover:bg-emerald-500 text-white"
+              onClick={() => openPricingModal()}
+            >
+              View Pro Perks ↗
+            </SpecularButton>
           </div>
-          <p className="text-[11px] text-[#B4B8CC] leading-snug">
-            Adaptive weak-area quizzes &amp; repo analysis.
-          </p>
-          <SpecularButton
-            size="sm"
-            radius={9999}
-            className="w-full mt-1.5 font-mono text-[11px] font-bold uppercase tracking-wider shadow-md"
-            href="/settings"
-          >
-            Upgrade Plan ↗
-          </SpecularButton>
-        </div>
+        ) : (
+          <div className="aurora-card p-3.5 rounded-[18px] space-y-2 text-white">
+            <div className="flex items-center justify-between">
+              <span className="text-[12px] font-bold text-white tracking-wide">Free Plan</span>
+              <Chip v="₹9/MO" tone="pro" className="text-[10px] py-0 px-2" />
+            </div>
+            <p className="text-[11px] text-[#B4B8CC] leading-snug">
+              Adaptive weak-area quizzes &amp; repo analysis.
+            </p>
+            <SpecularButton
+              size="sm"
+              radius={9999}
+              className="w-full mt-1.5 font-mono text-[11px] font-bold uppercase tracking-wider shadow-md"
+              onClick={() => openPricingModal()}
+            >
+              Upgrade to Pro (₹9) ↗
+            </SpecularButton>
+          </div>
+        )}
 
         {/* Settings link */}
         <Link

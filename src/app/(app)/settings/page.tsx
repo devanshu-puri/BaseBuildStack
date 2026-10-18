@@ -6,8 +6,10 @@ import { Chip } from "@/components/ui/chip";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { useTheme } from "@/components/theme/theme-provider";
+import { usePricingModal } from "@/components/payments/pricing-context";
 
 export default function SettingsPage() {
+  const { openPricingModal, isPro, plan, refreshEntitlements } = usePricingModal();
   const { theme, setTheme, resolvedTheme } = useTheme();
   const [couponCode, setCouponCode] = useState("PRO100");
   const [isRedeeming, setIsRedeeming] = useState(false);
@@ -30,6 +32,7 @@ export default function SettingsPage() {
       const data = await res.json();
       if (res.ok && data.ok) {
         setCouponStatus({ success: true, message: data.message });
+        await refreshEntitlements();
       } else {
         setCouponStatus({ success: false, message: data.error || "Failed to redeem coupon." });
       }
@@ -50,6 +53,48 @@ export default function SettingsPage() {
           Manage your role, stack, appearance, and access entitlements.
         </p>
       </header>
+
+      {/* Membership & Entitlements Overview */}
+      <GlassCard tone="default" padding="lg" className={`space-y-4 border ${isPro ? "border-emerald-500/40 shadow-[0_0_24px_-8px_rgba(16,185,129,0.3)]" : "border-[var(--accent)]/30"}`}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className={`w-3 h-3 rounded-full ${isPro ? "bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" : "bg-[var(--text-3)]"}`} />
+            <div>
+              <span className="text-[11px] font-mono uppercase tracking-wider text-[var(--text-3)] font-semibold">
+                Membership Tier
+              </span>
+              <h3 className="font-display text-[18px] font-bold text-[var(--text)]">
+                {isPro ? "BaseBuildStack Pro Member" : "Free Explorer Tier"}
+              </h3>
+            </div>
+          </div>
+          <Chip
+            v={isPro ? "PRO ACTIVE" : "FREE TIER"}
+            tone={isPro ? "pro" : "muted"}
+            className={isPro ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 font-bold px-2.5" : ""}
+          />
+        </div>
+
+        <p className="font-ui text-[13px] text-[var(--text-2)] leading-relaxed">
+          {isPro
+            ? "Your account currently has full Pro access enabled. All modules, unlimited adaptive & basic drills, rubric evaluations, and code explanations are unlocked."
+            : "You are on the Free Explorer tier with 5 daily drill questions and preview access. Upgrade to Pro for ₹9/month or use a demo sandbox payment to unlock full access."}
+        </p>
+
+        <div className="pt-2 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border)]">
+          <span className="font-mono text-xs text-[var(--text-3)]">
+            Active Plan: <span className="text-[var(--text)] font-semibold">{isPro ? (plan === "annual" ? "Pro Annual (₹89/yr)" : "Pro Monthly (₹9/mo)") : "Free Explorer"}</span>
+          </span>
+          <Button
+            variant={isPro ? "ghost" : "primary"}
+            size="sm"
+            onClick={() => openPricingModal()}
+            className={isPro ? "border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/10 font-bold" : "font-bold shadow-md"}
+          >
+            {isPro ? "View Pro Perks & Status ↗" : "Upgrade to Pro (₹9) ⚡"}
+          </Button>
+        </div>
+      </GlassCard>
 
       {/* Pro Entitlements & Coupon Redemption */}
       <GlassCard tone="default" padding="lg" className="space-y-4 rim border-[var(--accent)] shadow-[0_0_24px_-8px_rgba(94,78,240,0.35)]">
@@ -127,6 +172,17 @@ export default function SettingsPage() {
             {couponStatus.message}
           </div>
         )}
+
+        <div className="pt-2 border-t border-[var(--border)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+          <span className="font-ui text-[var(--text-2)]">Prefer standard checkout or free test payment?</span>
+          <button
+            type="button"
+            onClick={() => openPricingModal()}
+            className="text-[var(--accent-bright)] hover:underline font-mono font-bold cursor-pointer flex items-center gap-1"
+          >
+            <span>Open Razorpay Gateway &rarr;</span>
+          </button>
+        </div>
       </GlassCard>
 
       {/* Profile & Target Role */}

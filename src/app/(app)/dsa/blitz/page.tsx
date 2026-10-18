@@ -11,8 +11,10 @@ import { ProgressRing } from "@/components/ui/progress-ring";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import { BlitzSessionCard, BlitzVerdict } from "@/lib/m1/blitz-session";
+import { usePricingModal } from "@/components/payments/pricing-context";
 
 export default function PatternBlitzPage() {
+  const { openPricingModal } = usePricingModal();
   const [loading, setLoading] = useState(true);
   const [cards, setCards] = useState<BlitzSessionCard[]>([]);
   const [dailyQuotaReached, setDailyQuotaReached] = useState(false);
@@ -174,7 +176,7 @@ export default function PatternBlitzPage() {
           </p>
         </div>
         <div className="pt-4 flex flex-col gap-3">
-          <Button variant="primary" size="md" href="/settings">
+          <Button variant="primary" size="md" onClick={() => openPricingModal()}>
             Upgrade to Pro
           </Button>
           <Button variant="secondary" size="md" href="/home">

@@ -15,14 +15,14 @@ export const PLANS: Record<PlanId, PlanConfig> = {
   pro_monthly: {
     id: "pro_monthly",
     name: "BaseBuildStack Pro (Monthly)",
-    amountInPaise: 99900,
+    amountInPaise: 900, // ₹9 in paise
     currency: "INR",
     intervalDays: 30,
   },
   pro_yearly: {
     id: "pro_yearly",
     name: "BaseBuildStack Pro (Yearly)",
-    amountInPaise: 999900,
+    amountInPaise: 8900, // ₹89 in paise
     currency: "INR",
     intervalDays: 365,
   },
@@ -33,12 +33,27 @@ export const CreateOrderRequestSchema = z.object({
 });
 export type CreateOrderRequest = z.infer<typeof CreateOrderRequestSchema>;
 
+export const VerifyPaymentRequestSchema = z.object({
+  razorpay_order_id: z.string().min(1),
+  razorpay_payment_id: z.string().min(1),
+  razorpay_signature: z.string().min(1),
+  planId: PlanIdSchema.default("pro_monthly"),
+});
+export type VerifyPaymentRequest = z.infer<typeof VerifyPaymentRequestSchema>;
+
+export const SimulatePaymentRequestSchema = z.object({
+  orderId: z.string().optional(),
+  planId: PlanIdSchema.default("pro_monthly"),
+});
+export type SimulatePaymentRequest = z.infer<typeof SimulatePaymentRequestSchema>;
+
 export interface CreateOrderResponse {
   orderId: string;
   amount: number;
   currency: string;
   keyId: string;
   planId: PlanId;
+  isTestMode?: boolean;
 }
 
 export const RazorpayWebhookEventSchema = z.object({

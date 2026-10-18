@@ -39,7 +39,7 @@ describe("Razorpay Payments & Entitlements", () => {
     const order = await createRazorpayOrder("user_pay_test", "pro_monthly");
 
     expect(order.orderId).toMatch(/^order_/);
-    expect(order.amount).toBe(99900); // ₹999 in paise
+    expect(order.amount).toBe(900); // ₹9 in paise
     expect(order.currency).toBe("INR");
     expect(order.planId).toBe("pro_monthly");
   });
@@ -70,7 +70,7 @@ describe("Razorpay Payments & Entitlements", () => {
         payment: {
           entity: {
             id: "pay_xyz_987",
-            amount: 99900,
+            amount: 900,
             currency: "INR",
             status: "captured",
             order_id: "order_xyz_987",
