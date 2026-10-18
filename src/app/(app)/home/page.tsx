@@ -7,6 +7,8 @@ import { GlassCard } from "@/components/ui/glass-card";
 import { Chip } from "@/components/ui/chip";
 import { Button } from "@/components/ui/button";
 import { StatBlock } from "@/components/ui/stat-block";
+import { usePricingModal } from "@/components/payments/pricing-context";
+
 const FEATURED_TOPICS = [
   {
     id: "rag-pipeline",
