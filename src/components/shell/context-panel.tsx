@@ -1,10 +1,15 @@
+"use client";
+
 import React from "react";
 import Link from "next/link";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Chip } from "@/components/ui/chip";
 import { Button } from "@/components/ui/button";
+import { usePricingModal } from "@/components/payments/pricing-context";
 
 export function ContextPanel() {
+  const { streak, dueSrsCount } = usePricingModal();
+
   return (
     <aside
       aria-label="Daily context and review panel"
@@ -14,14 +19,16 @@ export function ContextPanel() {
         Daily Focus
       </div>
 
-      {/* 1. Streak Card */}
+      {/* 1. Live Streak Card */}
       <GlassCard tone="default" padding="sm" className="space-y-2">
         <div className="flex items-center justify-between">
           <span className="text-[13px] font-semibold text-[var(--text)] font-ui">Current Streak</span>
-          <Chip k="DAYS" v="4" tone="accent" />
+          <Chip k="DAYS" v={String(streak)} tone={streak > 0 ? "accent" : "muted"} />
         </div>
         <p className="text-[12px] text-[var(--text-2)] leading-snug">
-          Complete today&apos;s Mind Sprint to extend your streak to 5 days.
+          {streak > 0
+            ? `Active streak: ${streak} day${streak > 1 ? "s" : ""}. Complete today's drill to reach ${streak + 1} days!`
+            : "No active streak yet. Complete a quiz or drill today to start your day 1 streak!"}
         </p>
       </GlassCard>
 
@@ -71,21 +78,29 @@ export function ContextPanel() {
         </Link>
       </GlassCard>
 
-      {/* 4. Due Reviews Card */}
+      {/* 4. Live Due Reviews Card */}
       <GlassCard tone="subtle" padding="sm" className="space-y-2">
         <div className="flex items-center justify-between">
           <span className="text-[12px] font-semibold text-[var(--text)] font-ui">Due for Recall</span>
-          <Chip v="3 CARDS" tone="bad" />
+          {dueSrsCount > 0 ? (
+            <Chip v={`${dueSrsCount} CARDS`} tone="bad" />
+          ) : (
+            <Chip v="ALL CAUGHT UP" tone="good" />
+          )}
         </div>
         <p className="text-[11px] text-[var(--text-3)] leading-snug">
-          SM-2 algorithm scheduled 3 Pattern Blitz cards for review today.
+          {dueSrsCount > 0
+            ? `SM-2 spaced repetition scheduled ${dueSrsCount} card${dueSrsCount > 1 ? "s" : ""} for review today.`
+            : "No revision cards due right now. Complete new drills to build your revision queue."}
         </p>
-        <Link
-          href="/dsa/blitz"
-          className="text-[11px] font-semibold text-[var(--accent-bright)] hover:underline inline-block pt-1 cursor-pointer"
-        >
-          Review Cards Now &rarr;
-        </Link>
+        {dueSrsCount > 0 && (
+          <Link
+            href="/dsa/blitz"
+            className="text-[11px] font-semibold text-[var(--accent-bright)] hover:underline inline-block pt-1 cursor-pointer"
+          >
+            Review Cards Now &rarr;
+          </Link>
+        )}
       </GlassCard>
     </aside>
   );

@@ -19,16 +19,28 @@ export class StreakRepository extends UserScopedRepository<StreakDocument> {
     super("streaks", userId, StreakSchema);
   }
 
-  async getStreak(): Promise<StreakDocument> {
+  async getStreak(now: Date = new Date()): Promise<StreakDocument> {
     const existing = await this.findOne();
-    if (existing) return existing;
+    if (!existing || !existing.lastDay) {
+      return {
+        userId: this.userId,
+        current: 0,
+        longest: 0,
+        lastDay: "",
+      };
+    }
 
-    return {
-      userId: this.userId,
-      current: 0,
-      longest: 0,
-      lastDay: "",
-    };
+    const today = formatDateKey(now);
+    const yesterday = getYesterdayKey(now);
+
+    // If last active day is neither today nor yesterday, the streak is broken and resets to 0!
+    if (existing.lastDay !== today && existing.lastDay !== yesterday) {
+      const resetDoc: StreakDocument = { ...existing, current: 0 };
+      await this.upsert({}, resetDoc);
+      return resetDoc;
+    }
+
+    return existing;
   }
 
   async recordActivity(now: Date = new Date()): Promise<StreakDocument> {

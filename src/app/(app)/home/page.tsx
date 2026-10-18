@@ -1,3 +1,4 @@
+"use client";
 
 import React from "react";
 import Link from "next/link";
@@ -6,15 +7,18 @@ import { GlassCard } from "@/components/ui/glass-card";
 import { Chip } from "@/components/ui/chip";
 import { Button } from "@/components/ui/button";
 import { StatBlock } from "@/components/ui/stat-block";
+import { usePricingModal } from "@/components/payments/pricing-context";
 
 export default function HomePage() {
+  const { streak, dueSrsCount, completed } = usePricingModal();
+
   const modules = [
     {
       id: "m1",
       tag: "Module I",
       title: "DSA & Modern Technical Rounds",
       desc: "Pattern Blitz (45s cards), Bug Audit (line-spotting), and Open-Ended system drills.",
-      progress: "0 / 60 completed",
+      progress: `${completed.m1} / 60 completed`,
       tint: "m1" as const,
       icon: "⚡",
       href: "/dsa",
@@ -30,7 +34,7 @@ export default function HomePage() {
       tag: "Module II",
       title: "Personalized Interview Quizzes",
       desc: "Adaptive questions tailored to your stack, resume skills, and project claims.",
-      progress: "0 / 10 completed",
+      progress: `${completed.m2} / 10 completed`,
       tint: "m2" as const,
       icon: "🎯",
       href: "/quiz",
@@ -46,7 +50,7 @@ export default function HomePage() {
       tag: "Module III",
       title: "Tech Bites (15-Minute Lessons)",
       desc: "Interactive 5-stage conceptual models with clickable architecture diagrams.",
-      progress: "0 / 8 completed",
+      progress: `${completed.m3} / 8 completed`,
       tint: "m3" as const,
       icon: "🧩",
       href: "/m3",
@@ -62,7 +66,7 @@ export default function HomePage() {
       tag: "Module IV",
       title: "Logic & Cognitive Practice",
       desc: "Daily 5-minute Mind Sprints, single-solution logic grids, and metacognition calibration.",
-      progress: "Streak: 4 days",
+      progress: streak > 0 ? `Streak: ${streak} day${streak === 1 ? "" : "s"}` : "Streak: 0 days",
       tint: "m4" as const,
       icon: "🧠",
       href: "/m4",
@@ -89,7 +93,7 @@ export default function HomePage() {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="font-mono text-[11px] uppercase tracking-wider text-white/70 font-semibold">
-                  Ready to continue
+                  {completed.m3 > 0 ? "Continue Learning" : "Start Here"}
                 </span>
                 <Link
                   href="/m3/lesson/rag-pipeline"
@@ -117,7 +121,7 @@ export default function HomePage() {
                 href="/m3/lesson/rag-pipeline"
                 className="shadow-[0_8px_24px_rgba(94,78,240,0.6)]"
               >
-                Start Lesson &rarr;
+                {completed.m3 > 0 ? "Continue Lesson →" : "Start First Lesson →"}
               </Button>
               <Chip k="STAGE" v="1 of 5" tone="default" className="bg-white/10 border-white/15 text-white" />
             </div>
@@ -156,10 +160,10 @@ export default function HomePage() {
       {/* Mobile only stats row (below xl) */}
       <div className="xl:hidden grid grid-cols-2 gap-3 sm:gap-4">
         <GlassCard tone="default" padding="sm" className="space-y-1">
-          <StatBlock label="CURRENT STREAK" value="4d" delta="+1" size="sm" />
+          <StatBlock label="CURRENT STREAK" value={`${streak}d`} delta={streak > 0 ? `+${streak}` : "+0"} size="sm" />
         </GlassCard>
         <GlassCard tone="default" padding="sm" className="space-y-1">
-          <StatBlock label="DUE SRS REVIEWS" value="3" size="sm" />
+          <StatBlock label="DUE SRS REVIEWS" value={String(dueSrsCount)} size="sm" />
         </GlassCard>
       </div>
 
@@ -178,29 +182,14 @@ export default function HomePage() {
           {modules.map((m) => (
             <BentoTile
               key={m.id}
-              span={6}
-              tint={m.tint}
-              visual={m.visual}
-              badge={<Chip k="MODULE" v={m.tag} tone="accent" />}
-              title={
-                <div className="flex items-center gap-2">
-                  <span className="text-xl" aria-hidden="true">{m.icon}</span>
-                  <span>{m.title}</span>
-                </div>
-              }
+              tag={m.tag}
+              title={m.title}
               desc={m.desc}
-              footer={
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-[11px] text-[var(--text-3)]">{m.progress}</span>
-                  <Link
-                    href={m.href}
-                    className="font-mono text-[12px] font-bold text-[var(--accent-bright)] hover:underline inline-flex items-center gap-1 cursor-pointer"
-                  >
-                    <span>Open Module</span>
-                    <span>&rarr;</span>
-                  </Link>
-                </div>
-              }
+              progress={m.progress}
+              tint={m.tint}
+              icon={m.icon}
+              href={m.href}
+              visual={m.visual}
             />
           ))}
         </div>

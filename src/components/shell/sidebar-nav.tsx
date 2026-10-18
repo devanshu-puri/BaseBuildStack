@@ -38,16 +38,16 @@ const primaryNav = [
   },
 ];
 
-const modules = [
-  { name: "DSA Rounds", count: "0/60", href: "/dsa", tag: "M1" },
-  { name: "Interview Quizzes", count: "0/10", href: "/quiz", tag: "M2" },
-  { name: "Tech Bites", count: "0/8", href: "/m3", tag: "M3" },
-  { name: "Mind Sprint", count: "Daily", href: "/m4", tag: "M4" },
-];
-
 export function SidebarNav() {
   const pathname = usePathname() || "";
-  const { openPricingModal, isPro } = usePricingModal();
+  const { openPricingModal, isPro, completed } = usePricingModal();
+
+  const modules = [
+    { name: "DSA Rounds", count: `${completed.m1}/60`, href: "/dsa", tag: "M1" },
+    { name: "Interview Quizzes", count: `${completed.m2}/10`, href: "/quiz", tag: "M2" },
+    { name: "Tech Bites", count: `${completed.m3}/8`, href: "/m3", tag: "M3" },
+    { name: "Mind Sprint", count: "Daily", href: "/m4", tag: "M4" },
+  ];
 
   return (
     <aside

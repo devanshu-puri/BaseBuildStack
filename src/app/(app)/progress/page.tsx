@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import Link from "next/link";
 import { GlassCard } from "@/components/ui/glass-card";
@@ -5,14 +7,46 @@ import { StatBlock } from "@/components/ui/stat-block";
 import { ProgressRing } from "@/components/ui/progress-ring";
 import { GlowTile } from "@/components/ui/milestone-card";
 import { Button } from "@/components/ui/button";
+import { usePricingModal } from "@/components/payments/pricing-context";
 
 export default function ProgressPage() {
+  const { streak, dueSrsCount, totalXp, accuracy, drillsDone, completed } = usePricingModal();
+
+  const totalFinished = completed.m1 + completed.m2 + completed.m3 + (completed.m4 > 0 ? 1 : 0);
+  const overallPercentage = Math.min(100, Math.round((totalFinished / 79) * 100));
+
   const milestones = [
-    { numeral: "01", title: "First Steps", desc: "Complete your first drill session", unlocked: true, xp: "+50 XP" },
-    { numeral: "02", title: "Pattern Spotter", desc: "Correctly identify 10 Blitz patterns", unlocked: true, xp: "+100 XP" },
-    { numeral: "03", title: "Bug Hunter", desc: "Spot the buggy line in 5 snippets", unlocked: false, xp: "+150 XP" },
-    { numeral: "04", title: "Streak Master", desc: "Maintain a 7-day practice streak", unlocked: false, xp: "+200 XP" },
+    {
+      numeral: "01",
+      title: "First Steps",
+      desc: "Complete your first drill session",
+      unlocked: drillsDone >= 1,
+      xp: "+50 XP",
+    },
+    {
+      numeral: "02",
+      title: "Pattern Spotter",
+      desc: "Correctly identify 10 Blitz patterns",
+      unlocked: completed.m1 >= 10,
+      xp: "+100 XP",
+    },
+    {
+      numeral: "03",
+      title: "Bug Hunter",
+      desc: "Spot the buggy line in 5 snippets",
+      unlocked: completed.m1 >= 5,
+      xp: "+150 XP",
+    },
+    {
+      numeral: "04",
+      title: "Streak Master",
+      desc: "Maintain a 7-day practice streak",
+      unlocked: streak >= 7,
+      xp: "+200 XP",
+    },
   ];
+
+  const unlockedCount = milestones.filter((m) => m.unlocked).length;
 
   return (
     <div className="space-y-8 max-w-5xl mx-auto py-2">
@@ -28,7 +62,7 @@ export default function ProgressPage() {
             </h2>
           </div>
           <div className="flex items-center gap-3">
-            <ProgressRing value={76} size={68} strokeWidth={6} label="OVERALL" />
+            <ProgressRing value={overallPercentage} size={68} strokeWidth={6} label="OVERALL" />
           </div>
         </div>
 
@@ -36,8 +70,8 @@ export default function ProgressPage() {
         <div className="pt-2">
           <StatBlock
             label="ACCUMULATED KNOWLEDGE XP"
-            value="1,850"
-            delta="+150 today"
+            value={totalXp.toLocaleString()}
+            delta={totalXp > 0 ? `+${totalXp} XP earned` : "Solve questions to earn XP"}
             gradient
             size="xl"
           />
@@ -50,7 +84,7 @@ export default function ProgressPage() {
               CURRENT STREAK
             </span>
             <div className="font-display text-[22px] font-bold text-[var(--text)] mt-1">
-              4 Days 🔥
+              {streak} Day{streak === 1 ? "" : "s"} {streak > 0 ? "🔥" : ""}
             </div>
           </div>
 
@@ -59,7 +93,7 @@ export default function ProgressPage() {
               ACCURACY
             </span>
             <div className="font-display text-[22px] font-bold text-[var(--text)] mt-1">
-              86%
+              {accuracy}%
             </div>
           </div>
 
@@ -68,7 +102,7 @@ export default function ProgressPage() {
               DRILLS DONE
             </span>
             <div className="font-display text-[22px] font-bold text-[var(--text)] mt-1">
-              14
+              {drillsDone}
             </div>
           </div>
 
@@ -81,7 +115,7 @@ export default function ProgressPage() {
               <span>&rarr;</span>
             </span>
             <div className="font-display text-[22px] font-bold text-[var(--text)] mt-1 group-hover:text-[var(--accent-bright)] transition-colors">
-              3 Cards
+              {dueSrsCount > 0 ? `${dueSrsCount} Cards` : "0 Cards"}
             </div>
           </Link>
         </div>
@@ -137,18 +171,19 @@ export default function ProgressPage() {
             Milestones &amp; Badges
           </h3>
           <span className="font-mono text-xs text-[var(--text-3)]">
-            2 / 4 UNLOCKED
+            {unlockedCount} / 4 UNLOCKED
           </span>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {milestones.map((m) => (
             <GlowTile
-              key={m.title}
+              key={m.numeral}
               numeral={m.numeral}
-              label={m.title}
+              title={m.title}
+              desc={m.desc}
               unlocked={m.unlocked}
-              tint="good"
+              xp={m.xp}
             />
           ))}
         </div>

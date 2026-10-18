@@ -15,7 +15,7 @@ export interface TopBarProps {
 
 export function TopBar({ title, showBack = false }: TopBarProps) {
   const pathname = usePathname() || "";
-  const { openPricingModal, isPro } = usePricingModal();
+  const { openPricingModal, isPro, streak } = usePricingModal();
 
   const getPageTitle = () => {
     if (title) return title;
@@ -84,35 +84,26 @@ export function TopBar({ title, showBack = false }: TopBarProps) {
           </button>
         )}
 
-        {/* Current Streak Indicator (Prominent across all pages) */}
-        <div
-          title="Current Streak: 4 days"
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-amber-500/30 bg-gradient-to-b from-amber-500/15 via-amber-500/5 to-black/30 bg-[#1c1815] text-xs font-mono font-semibold text-amber-400 shadow-[inset_0_1px_0_rgba(245,158,11,0.25),0_4px_12px_rgba(0,0,0,0.35)] select-none"
-        >
-          <span className="text-sm animate-pulse">🔥</span>
-          <span className="font-bold text-white">4</span>
-          <span className="text-[10px] text-amber-400/80 uppercase tracking-wider hidden sm:inline">DAY STREAK</span>
-        </div>
-
-        {/* Search trigger on lg+ */}
-        <button
-          type="button"
-          aria-label="Search"
-          className="hidden lg:flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl border border-white/12 bg-gradient-to-b from-white/[0.08] via-white/[0.02] to-black/30 bg-[#1a1c26] text-[12px] text-white/80 hover:text-white hover:border-white/25 hover:bg-[#222533] shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_4px_12px_rgba(0,0,0,0.35)] transition-all cursor-pointer"
-        >
-          <svg className="w-3.5 h-3.5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-            />
-          </svg>
-          <span className="text-white/80">Search...</span>
-          <kbd className="font-mono text-[10px] bg-black/40 px-1.5 py-0.5 rounded-md border border-white/15 text-white/70">
-            /
-          </kbd>
-        </button>
+        {/* Current Live Streak Indicator */}
+        {streak > 0 ? (
+          <div
+            title={`Current Streak: ${streak} day${streak > 1 ? "s" : ""}`}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-amber-500/30 bg-gradient-to-b from-amber-500/15 via-amber-500/5 to-black/30 bg-[#1c1815] text-xs font-mono font-semibold text-amber-400 shadow-[inset_0_1px_0_rgba(245,158,11,0.25),0_4px_12px_rgba(0,0,0,0.35)] select-none"
+          >
+            <span className="text-sm animate-pulse">🔥</span>
+            <span className="font-bold text-white">{streak}</span>
+            <span className="text-[10px] text-amber-400/80 uppercase tracking-wider hidden sm:inline">DAY STREAK</span>
+          </div>
+        ) : (
+          <div
+            title="Streak: 0 days (Complete a quiz or drill today to start your streak!)"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-white/10 bg-gradient-to-b from-white/[0.04] to-black/30 bg-[#16171f] text-xs font-mono font-semibold text-[var(--text-3)] shadow-sm select-none"
+          >
+            <span className="text-sm opacity-50">🔥</span>
+            <span className="font-bold text-[var(--text-2)]">0</span>
+            <span className="text-[10px] text-[var(--text-3)] uppercase tracking-wider hidden sm:inline">DAY STREAK</span>
+          </div>
+        )}
 
         {/* Theme Toggle Button */}
         <ThemeToggle />
