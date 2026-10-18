@@ -7,10 +7,77 @@ import { GlassCard } from "@/components/ui/glass-card";
 import { Chip } from "@/components/ui/chip";
 import { Button } from "@/components/ui/button";
 import { StatBlock } from "@/components/ui/stat-block";
-import { usePricingModal } from "@/components/payments/pricing-context";
+const FEATURED_TOPICS = [
+  {
+    id: "rag-pipeline",
+    category: "AI & LLM SYSTEMS",
+    title: "RAG Pipeline",
+    highlight: "Architecture",
+    desc: "Interactive 5-stage conceptual model: Embed query → Vector search → Rerank → Augment prompt → Generate response.",
+    stage: "1 OF 5",
+  },
+  {
+    id: "caching-fundamentals",
+    category: "BACKEND ARCHITECTURE",
+    title: "Caching & Cache-Aside",
+    highlight: "Strategy",
+    desc: "Master in-memory caching patterns, latency trade-offs, and how to prevent cache stampedes under high concurrency.",
+    stage: "1 OF 5",
+  },
+  {
+    id: "embeddings-similarity",
+    category: "VECTOR SEARCH",
+    title: "Vector Embeddings &",
+    highlight: "Similarity Search",
+    desc: "Understand high-dimensional dense vector spaces, cosine distance vs Euclidean metric, and how semantic similarity works.",
+    stage: "1 OF 5",
+  },
+  {
+    id: "tokens-context",
+    category: "LLM FOUNDATIONS",
+    title: "Tokens & Context",
+    highlight: "Window Scaling",
+    desc: "Master Byte-Pair Encoding (BPE), token-to-word ratios, and how context window memory limits impact system design.",
+    stage: "1 OF 5",
+  },
+  {
+    id: "http-rest",
+    category: "DISTRIBUTED SYSTEMS",
+    title: "HTTP/REST & Idempotent",
+    highlight: "API Design",
+    desc: "Master REST conventions, safe vs idempotent HTTP verbs, and robust idempotency key design for financial transactions.",
+    stage: "1 OF 5",
+  },
+  {
+    id: "docker-containers",
+    category: "DEVOPS & CLOUD",
+    title: "Docker & Container",
+    highlight: "Isolation",
+    desc: "Namespaces, cgroups, layered UnionFS, and process virtualization on the host Linux kernel.",
+    stage: "1 OF 5",
+  },
+  {
+    id: "llm-basics",
+    category: "AI & LLM SYSTEMS",
+    title: "LLM Autoregressive",
+    highlight: "Generation",
+    desc: "Understand how Large Language Models generate text token-by-token and control randomness via temperature.",
+    stage: "1 OF 5",
+  },
+];
 
 export default function HomePage() {
   const { streak, dueSrsCount, completed } = usePricingModal();
+  const [topicIndex, setTopicIndex] = React.useState(0);
+
+  React.useEffect(() => {
+    const timer = setInterval(() => {
+      setTopicIndex((prev) => (prev + 1) % FEATURED_TOPICS.length);
+    }, 6000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const currentTopic = FEATURED_TOPICS[topicIndex];
 
   const modules = [
     {
@@ -88,28 +155,53 @@ export default function HomePage() {
           <GlassCard
             tone="aurora"
             padding="lg"
-            className="flex flex-col justify-between min-h-[260px] text-white"
+            className="flex flex-col justify-between min-h-[260px] text-white transition-all duration-500"
           >
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="font-mono text-[11px] uppercase tracking-wider text-white/70 font-semibold">
-                  {completed.m3 > 0 ? "Continue Learning" : "Start Here"}
-                </span>
-                <Link
-                  href="/m3/lesson/rag-pipeline"
-                  aria-label="Start lesson"
-                  className="arrow-btn"
-                >
-                  ↗
-                </Link>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-[11px] uppercase tracking-wider text-purple-200/90 font-semibold px-2 py-0.5 rounded-md bg-white/10 border border-white/15">
+                    {currentTopic.category}
+                  </span>
+                  <span className="font-mono text-[11px] uppercase tracking-wider text-white/70 font-medium hidden sm:inline">
+                    {completed.m3 > 0 ? "Continue Learning" : "Ready to Continue"}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {/* Topic indicators */}
+                  <div className="flex items-center gap-1 mr-1">
+                    {FEATURED_TOPICS.map((_, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => setTopicIndex(i)}
+                        title={`Switch to topic ${i + 1}`}
+                        className={`h-1.5 rounded-full transition-all cursor-pointer ${
+                          i === topicIndex
+                            ? "w-4 bg-white shadow-[0_0_8px_white]"
+                            : "w-1.5 bg-white/30 hover:bg-white/60"
+                        }`}
+                      />
+                    ))}
+                  </div>
+
+                  <Link
+                    href="/m3"
+                    aria-label="Start learning in Module 3"
+                    className="arrow-btn"
+                  >
+                    ↗
+                  </Link>
+                </div>
               </div>
 
               <div>
-                <h2 className="font-display text-[26px] sm:text-[34px] font-extrabold text-white leading-tight">
-                  RAG Pipeline <span className="gradient-keyword">Architecture</span>
+                <h2 className="font-display text-[26px] sm:text-[34px] font-extrabold text-white leading-tight transition-opacity duration-300">
+                  {currentTopic.title} <span className="gradient-keyword">{currentTopic.highlight}</span>
                 </h2>
-                <p className="font-ui text-[14px] text-[#B4B8CC] mt-2 max-w-[560px] leading-relaxed">
-                  Interactive 5-stage conceptual model: Embed query &rarr; Vector search &rarr; Rerank &rarr; Augment prompt &rarr; Generate response.
+                <p className="font-ui text-[14px] text-[#B4B8CC] mt-2 max-w-[560px] leading-relaxed transition-opacity duration-300">
+                  {currentTopic.desc}
                 </p>
               </div>
             </div>
@@ -118,12 +210,12 @@ export default function HomePage() {
               <Button
                 variant="primary"
                 size="md"
-                href="/m3/lesson/rag-pipeline"
-                className="shadow-[0_8px_24px_rgba(94,78,240,0.6)]"
+                href="/m3"
+                className="shadow-[0_8px_24px_rgba(94,78,240,0.6)] cursor-pointer"
               >
-                {completed.m3 > 0 ? "Continue Lesson →" : "Start First Lesson →"}
+                Start Learning →
               </Button>
-              <Chip k="STAGE" v="1 of 5" tone="default" className="bg-white/10 border-white/15 text-white" />
+              <Chip k="STAGE" v={currentTopic.stage} tone="default" className="bg-white/10 border-white/15 text-white" />
             </div>
           </GlassCard>
         </div>
